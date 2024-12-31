@@ -277,8 +277,8 @@ fn draw_field_grid(
                     let extent = field[(i, j, k, coord)];
 
                     paint.line(
-                        espace(width, base),
-                        espace(width, base + unit_vect * extent * scale),
+                        espace(width, base + offset ),
+                        espace(width, base + offset + unit_vect * extent * scale),
                         stroke,
                     );
                 }
@@ -314,18 +314,40 @@ fn draw_field_vect(
 
                 let pos = espace(width, base);
                 let end = pos + extent * scale;
-
-                let screen_pos = paint.internal_transform().world_to_egui(pos);
-                let screen_end = paint.internal_transform().world_to_egui(end);
-                let screen_len = screen_pos.0.to_pos2().distance(screen_end.0.to_pos2());
-
-                paint.arrow(
+                screenspace_arrow(
+                    paint,
                     pos,
-                    extent.normalize(),
-                    scale * screen_len,
+                    end,
                     stroke,
-                );
+                )
+
+                
             }
         }
     }
 }
+
+fn screenspace_arrow(paint: &Painter3D, pos: Vec3, end: Vec3, stroke: Stroke) {
+    let screen_pos = paint.internal_transform().world_to_egui(pos);
+    let screen_end = paint.internal_transform().world_to_egui(end);
+    let screen_len = screen_pos.0.to_pos2().distance(screen_end.0.to_pos2());
+
+    paint.arrow(
+        pos,
+        (end - pos).normalize_or_zero(),
+        screen_len,
+        stroke,
+    );
+}
+
+fn trace_mag_vects(
+) {
+}
+
+/*
+/// Returns (E, H)
+fn sample(sim: &Sim, pos: Vec3) -> (Vec3, Vec3) {
+let corner = pos.floor();
+let mag_corner = (pos - 0.5).floor();
+}
+*/
