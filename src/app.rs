@@ -50,7 +50,7 @@ impl Default for TemplateApp {
     fn default() -> Self {
         let sim = random_sim(10);
         Self {
-            pause: true,
+            pause: false,
             new_width: sim.width(),
 
             sim,
@@ -67,7 +67,7 @@ impl Default for TemplateApp {
 
             sim_cfg: SimConfig {
                 dx: 1.,
-                dt: 0.5,
+                dt: 0.005,
                 mu: 1.,
                 eps: 1.,
             },
