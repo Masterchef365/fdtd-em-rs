@@ -312,9 +312,17 @@ fn draw_field_vect(
                     field[(i, j, k, 2)],
                 );
 
-                paint.line(
-                    espace(width, base),
-                    espace(width, base + extent * scale),
+                let pos = espace(width, base);
+                let end = pos + extent * scale;
+
+                let screen_pos = paint.internal_transform().world_to_egui(pos);
+                let screen_end = paint.internal_transform().world_to_egui(end);
+                let screen_len = screen_pos.0.to_pos2().distance(screen_end.0.to_pos2());
+
+                paint.arrow(
+                    pos,
+                    extent.normalize(),
+                    scale * screen_len,
                     stroke,
                 );
             }
