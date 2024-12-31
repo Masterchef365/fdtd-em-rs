@@ -179,7 +179,7 @@ impl eframe::App for TemplateApp {
                             draw_grid(
                                 paint,
                                 self.sim.width(),
-                                Stroke::new(1., Color32::from_rgb(80, 80, 80)),
+                                Stroke::new(1., Color32::from_gray(36)),
                             );
                         } else {
                             if self.show_minimal_grid {
@@ -276,11 +276,9 @@ fn draw_field_grid(
                     let base = base + offset * (Vec3::ONE - unit_vect);
                     let extent = field[(i, j, k, coord)];
 
-                    paint.line(
-                        espace(width, base + offset ),
-                        espace(width, base + offset + unit_vect * extent * scale),
-                        stroke,
-                    );
+                    let pos = espace(width, base + offset);
+                    let end = pos + unit_vect * extent * scale;
+                    screenspace_arrow(paint, pos, end, stroke);
                 }
             }
         }
@@ -344,10 +342,9 @@ fn trace_mag_vects(
 ) {
 }
 
-/*
 /// Returns (E, H)
 fn sample(sim: &Sim, pos: Vec3) -> (Vec3, Vec3) {
-let corner = pos.floor();
-let mag_corner = (pos - 0.5).floor();
+    let corner = pos.floor();
+    let mag_corner = (pos - 0.5).floor();
+    todo!()
 }
-*/
