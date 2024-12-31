@@ -159,7 +159,7 @@ impl eframe::App for TemplateApp {
                     .speed(1e-3),
             );
             ui.add(
-                DragValue::new(&mut self.sim_cfg.eps)
+                DragValue::new(&mut self.sim_cfg.mu)
                     .prefix("μ: ")
                     .speed(1e-3),
             );
