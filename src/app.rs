@@ -21,6 +21,9 @@ pub struct TemplateApp {
     show_e_vect: bool,
     show_h_vect: bool,
 
+    show_e_mag: bool,
+    show_h_mag: bool,
+
     new_width: usize,
     pause: bool,
 
@@ -69,6 +72,9 @@ impl Default for TemplateApp {
 
             show_e_vect: true,
             show_h_vect: true,
+
+            show_e_mag: false,
+            show_h_mag: false,
 
             vect_scale: 0.5,
 
@@ -132,6 +138,11 @@ impl eframe::App for TemplateApp {
                 ui.checkbox(&mut self.show_e_vect, "Show E field vects");
                 ui.checkbox(&mut self.show_h_vect, "H vects");
             });
+            ui.horizontal(|ui| {
+                ui.checkbox(&mut self.show_e_mag, "Show E field mag");
+                ui.checkbox(&mut self.show_h_mag, "H vects");
+            });
+
             ui.add(
                 DragValue::new(&mut self.vect_scale)
                     .prefix("Scale: ")
@@ -213,6 +224,15 @@ impl eframe::App for TemplateApp {
                         if self.show_h_vect {
                             draw_hfield_vect(paint, &self.sim, h_color, self.vect_scale);
                         }
+
+                        if self.show_e_mag {
+                            draw_efield_mag(paint, &self.sim, e_color.color, self.vect_scale*10.);
+                        }
+                        if self.show_h_mag {
+                            draw_hfield_mag(paint, &self.sim, h_color.color, self.vect_scale*10.);
+                        }
+
+
                     });
             });
         });
@@ -331,6 +351,41 @@ fn draw_field_vect(
         }
     }
 }
+
+fn draw_field_magnitude(
+    paint: &Painter3D,
+    field: &Array4<f32>,
+    width: usize,
+    color: Color32,
+    scale: f32,
+    offset: f32,
+) {
+    for i in 0..width {
+        for j in 0..width {
+            for k in 0..width {
+                let base = Vec3::new(i as f32, j as f32, k as f32);
+                let extent = Vec3::new(
+                    field[(i, j, k, 0)],
+                    field[(i, j, k, 1)],
+                    field[(i, j, k, 2)],
+                );
+
+                let pos = espace(width, base + offset);
+                paint.circle_filled(pos, extent.length() * scale, color)
+            }
+        }
+    }
+}
+
+fn draw_efield_mag(paint: &Painter3D, sim: &Sim, color: Color32, scale: f32) {
+    draw_field_magnitude(paint, sim.e_field(), sim.width(), color, scale, 0.0);
+}
+
+fn draw_hfield_mag(paint: &Painter3D, sim: &Sim, color: Color32, scale: f32) {
+    draw_field_magnitude(paint, sim.h_field(), sim.width(), color, scale, 0.5);
+}
+
+
 
 fn screenspace_arrow(paint: &Painter3D, pos: Vec3, end: Vec3, stroke: Stroke) {
     let screen_pos = paint.internal_transform().world_to_egui(pos);
