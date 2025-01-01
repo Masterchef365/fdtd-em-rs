@@ -201,10 +201,10 @@ impl eframe::App for TemplateApp {
                         let e_color = Stroke::new(1., Color32::YELLOW);
                         let h_color = Stroke::new(1., Color32::RED);
                         if self.show_e_grid {
-                            draw_efield_grid(paint, &self.sim, e_color, self.vect_scale*0.5);
+                            draw_efield_grid(paint, &self.sim, e_color, self.vect_scale);
                         }
                         if self.show_h_grid {
-                            draw_hfield_grid(paint, &self.sim, h_color, self.vect_scale*0.5);
+                            draw_hfield_grid(paint, &self.sim, h_color, self.vect_scale);
                         }
 
                         if self.show_e_vect {
