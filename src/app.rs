@@ -32,6 +32,7 @@ fn random_sim(width: usize) -> Sim {
 
     let unif = rand::distributions::Uniform::new(-1.0, 1.0);
     let mut rng = rand::thread_rng();
+
     /*
     sim.e_field
         .iter_mut()
@@ -42,6 +43,12 @@ fn random_sim(width: usize) -> Sim {
     */
 
     sim.e_field[(width/2,width/2,width/2,1)] = 10.;
+    /*
+    sim.h_field[(width/2,width/2,width/2,1)] = 10.;
+
+    sim.e_field[(0,0,0,0)] = 10.;
+    sim.h_field[(0,0,0,0)] = 10.;
+    */
 
     sim
 }
@@ -181,14 +188,14 @@ impl eframe::App for TemplateApp {
                                 self.sim.width(),
                                 Stroke::new(1., Color32::from_gray(36)),
                             );
-                        } else {
-                            if self.show_minimal_grid {
-                                draw_minimal_grid(
-                                    paint,
-                                    self.sim.width(),
-                                    Color32::from_rgb(80, 80, 80),
-                                );
-                            }
+                        } 
+
+                        if self.show_minimal_grid {
+                            draw_minimal_grid(
+                                paint,
+                                self.sim.width(),
+                                Color32::LIGHT_GRAY,
+                            );
                         }
 
                         let e_color = Stroke::new(1., Color32::YELLOW);
@@ -276,7 +283,7 @@ fn draw_field_grid(
                     let base = base + offset * (Vec3::ONE - unit_vect);
                     let extent = field[(i, j, k, coord)];
 
-                    let pos = espace(width, base + offset);
+                    let pos = espace(width, base);
                     let end = pos + unit_vect * extent * scale;
                     screenspace_arrow(paint, pos, end, stroke);
                 }
