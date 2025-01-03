@@ -45,7 +45,9 @@ fn random_sim(width: usize) -> Sim {
         .for_each(|x| *x = unif.sample(&mut rng));
     */
 
-    sim.e_field[(width/2,width/2,width/2,1)] = 10_f32.into();
+    sim.e_field[(width/2,width/2,width/2,0)] = 10_f32.into();
+    sim.e_field[(width/2,width/2,width/2,1)] = 1_f32.into();
+    sim.e_field[(width/2,width/2,width/2,2)] = 5_f32.into();
     /*
     sim.h_field[(width/2,width/2,width/2,1)] = 10.;
 
@@ -80,7 +82,7 @@ impl Default for TemplateApp {
 
             sim_cfg: SimConfig {
                 dx: 1.,
-                dt: 0.5,
+                dt: 0.1,
                 mu: 1.,
                 eps: 1.,
             },
