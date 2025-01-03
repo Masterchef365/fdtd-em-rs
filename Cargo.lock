@@ -901,6 +901,7 @@ dependencies = [
  "env_logger",
  "getrandom",
  "log",
+ "minifloat",
  "ndarray",
  "rand",
  "serde",
@@ -1750,6 +1751,15 @@ dependencies = [
  "log",
  "objc",
  "paste",
+]
+
+[[package]]
+name = "minifloat"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a1e0744e036a39379c5bcbde415cff7ee9ae45a557c2c916dba067f1a4830e5"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
