@@ -3,7 +3,7 @@ use ndarray::{Array3, Array4};
 use rand::prelude::Distribution;
 use threegui::{threegui, Painter3D, Vec3};
 
-use crate::sim::{Sim, SimConfig};
+use crate::sim::{Flote, Sim, SimConfig};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 //#[derive(serde::Deserialize, serde::Serialize)]
@@ -45,7 +45,7 @@ fn random_sim(width: usize) -> Sim {
         .for_each(|x| *x = unif.sample(&mut rng));
     */
 
-    sim.e_field[(width/2,width/2,width/2,1)] = 10.;
+    sim.e_field[(width/2,width/2,width/2,1)] = 10_f32.into();
     /*
     sim.h_field[(width/2,width/2,width/2,1)] = 10.;
 
@@ -80,7 +80,7 @@ impl Default for TemplateApp {
 
             sim_cfg: SimConfig {
                 dx: 1.,
-                dt: 0.005,
+                dt: 0.5,
                 mu: 1.,
                 eps: 1.,
             },
@@ -289,7 +289,7 @@ fn draw_hfield_grid(paint: &Painter3D, sim: &Sim, stroke: Stroke, scale: f32) {
 
 fn draw_field_grid(
     paint: &Painter3D,
-    field: &Array4<f32>,
+    field: &Array4<Flote>,
     width: usize,
     stroke: Stroke,
     scale: f32,
@@ -301,7 +301,7 @@ fn draw_field_grid(
                 for (coord, unit_vect) in [Vec3::X, Vec3::Y, Vec3::Z].into_iter().enumerate() {
                     let base = Vec3::new(i as f32, j as f32, k as f32);
                     let base = base + offset * (Vec3::ONE - unit_vect);
-                    let extent = field[(i, j, k, coord)];
+                    let extent: f32 = field[(i, j, k, coord)].into();
 
                     let pos = espace(width, base);
                     let end = pos + unit_vect * extent * scale;
@@ -322,7 +322,7 @@ fn draw_hfield_vect(paint: &Painter3D, sim: &Sim, stroke: Stroke, scale: f32) {
 
 fn draw_field_vect(
     paint: &Painter3D,
-    field: &Array4<f32>,
+    field: &Array4<Flote>,
     width: usize,
     stroke: Stroke,
     scale: f32,
@@ -332,9 +332,9 @@ fn draw_field_vect(
             for k in 0..width {
                 let base = Vec3::new(i as f32, j as f32, k as f32);
                 let extent = Vec3::new(
-                    field[(i, j, k, 0)],
-                    field[(i, j, k, 1)],
-                    field[(i, j, k, 2)],
+                    field[(i, j, k, 0)].into(),
+                    field[(i, j, k, 1)].into(),
+                    field[(i, j, k, 2)].into(),
                 );
 
                 let pos = espace(width, base);
@@ -354,7 +354,7 @@ fn draw_field_vect(
 
 fn draw_field_magnitude(
     paint: &Painter3D,
-    field: &Array4<f32>,
+    field: &Array4<Flote>,
     width: usize,
     color: Color32,
     scale: f32,
@@ -365,9 +365,9 @@ fn draw_field_magnitude(
             for k in 0..width {
                 let base = Vec3::new(i as f32, j as f32, k as f32);
                 let extent = Vec3::new(
-                    field[(i, j, k, 0)],
-                    field[(i, j, k, 1)],
-                    field[(i, j, k, 2)],
+                    field[(i, j, k, 0)].into(),
+                    field[(i, j, k, 1)].into(),
+                    field[(i, j, k, 2)].into(),
                 );
 
                 let pos = espace(width, base + offset);

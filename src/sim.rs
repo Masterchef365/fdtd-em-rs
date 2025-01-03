@@ -1,6 +1,7 @@
+use float8::F8E4M3;
 use ndarray::Array4;
 
-type Flote = f32;
+pub type Flote = F8E4M3;
 
 pub struct Sim {
     pub e_field: Array4<Flote>,
@@ -10,8 +11,8 @@ pub struct Sim {
 
 impl Sim {
     pub fn new(width: usize) -> Self {
-        let e_field = Array4::zeros((width, width, width, 3));
-        let h_field = Array4::zeros((width, width, width, 3));
+        let e_field = Array4::from_shape_fn((width, width, width, 3), |_| Flote::ZERO);
+        let h_field = Array4::from_shape_fn((width, width, width, 3), |_| Flote::ZERO);
         Self {
             e_field,
             h_field,
@@ -38,12 +39,12 @@ impl Sim {
         let width = self.width();
         for xi in 0..width {
             for yi in 0..width {
-                self.e_field[(0, xi, yi, 0)] = 0.0;
-                self.e_field[(width-1, xi, yi, 0)] = 0.0;
-                self.e_field[(xi, 0, yi, 1)] = 0.0;
-                self.e_field[(xi, width-1, yi, 1)] = 0.0;
-                self.e_field[(xi, yi, 0, 2)] = 0.0;
-                self.e_field[(xi, yi, width-1, 2)] = 0.0;
+                self.e_field[(0, xi, yi, 0)] = Flote::ZERO;
+                self.e_field[(width-1, xi, yi, 0)] = Flote::ZERO;
+                self.e_field[(xi, 0, yi, 1)] = Flote::ZERO;
+                self.e_field[(xi, width-1, yi, 1)] = Flote::ZERO;
+                self.e_field[(xi, yi, 0, 2)] = Flote::ZERO;
+                self.e_field[(xi, yi, width-1, 2)] = Flote::ZERO;
             }
         }
 
@@ -52,12 +53,12 @@ impl Sim {
         let width = self.width();
         for xi in 0..width {
             for yi in 0..width {
-                self.h_field[(0, xi, yi, 0)] = 0.0;
-                self.h_field[(width-1, xi, yi, 0)] = 0.0;
-                self.h_field[(xi, 0, yi, 1)] = 0.0;
-                self.h_field[(xi, width-1, yi, 1)] = 0.0;
-                self.h_field[(xi, yi, 0, 2)] = 0.0;
-                self.h_field[(xi, yi, width-1, 2)] = 0.0;
+                self.h_field[(0, xi, yi, 0)] = Flote::ZERO;
+                self.h_field[(width-1, xi, yi, 0)] = Flote::ZERO;
+                self.h_field[(xi, 0, yi, 1)] = Flote::ZERO;
+                self.h_field[(xi, width-1, yi, 1)] = Flote::ZERO;
+                self.h_field[(xi, yi, 0, 2)] = Flote::ZERO;
+                self.h_field[(xi, yi, width-1, 2)] = Flote::ZERO;
             }
         }
     }
@@ -65,18 +66,18 @@ impl Sim {
 
 pub struct SimConfig {
     /// Spacial step (meters)
-    pub dx: Flote,
+    pub dx: f32,
     /// TimeFloteep (seconds)
-    pub dt: Flote,
+    pub dt: f32,
     /// PermFloteivity N/A^2
-    pub mu: Flote,
+    pub mu: f32,
     /// PermFloteility F/m
-    pub eps: Flote,
+    pub eps: f32,
 }
 
 impl SimConfig {
     pub fn scaling(&self) -> Flote {
-        self.dt / self.dx / (self.mu * self.eps).sqrt()
+        Flote::from_f32(self.dt / self.dx / (self.mu * self.eps).sqrt())
     }
 }
 
