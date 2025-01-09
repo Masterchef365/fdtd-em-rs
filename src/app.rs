@@ -64,7 +64,7 @@ impl Default for TemplateApp {
     fn default() -> Self {
         let sim = random_sim(10);
         Self {
-            streamers: Streamers::new(&sim, 1000),
+            streamers: Streamers::new(&sim, 5000),
             enable_streamers: true,
             streamer_step: 0.01,
 
@@ -128,7 +128,8 @@ impl eframe::App for TemplateApp {
             ctx.request_repaint();
             self.sim.step(&self.sim_cfg);
             let width = self.sim.width();
-            self.sim.h_field[(width / 2, width / 2, width / 2, 1)] = 10.;
+
+            self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 1.;
             //self.sim.e_field[(width/2,width/2,width/2,1)] = 10.;
         }
 
