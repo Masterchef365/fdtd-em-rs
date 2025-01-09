@@ -1,7 +1,7 @@
 use egui::{Color32, DragValue, SidePanel, Stroke, Vec2};
 use ndarray::{Array3, Array4};
-use rand::prelude::Distribution;
-use threegui::{threegui, Painter3D, Vec3};
+use rand::{prelude::Distribution, Rng};
+use threegui::{threegui, Painter3D, ThreeUi, Vec3};
 
 use crate::sim::{Sim, SimConfig};
 
@@ -27,6 +27,10 @@ pub struct TemplateApp {
     new_width: usize,
     pause: bool,
 
+    streamers: Streamers,
+    streamer_step: f32,
+    enable_streamers: bool,
+
     vect_scale: f32,
 }
 
@@ -45,7 +49,7 @@ fn random_sim(width: usize) -> Sim {
         .for_each(|x| *x = unif.sample(&mut rng));
     */
 
-    sim.e_field[(width/2,width/2,width/2,1)] = 10.;
+    //sim.e_field[(width/2,width/2,width/2,1)] = 10.;
     /*
     sim.h_field[(width/2,width/2,width/2,1)] = 10.;
 
@@ -60,6 +64,10 @@ impl Default for TemplateApp {
     fn default() -> Self {
         let sim = random_sim(10);
         Self {
+            streamers: Streamers::new(&sim, 1000),
+            enable_streamers: true,
+            streamer_step: 0.01,
+
             pause: false,
             new_width: sim.width(),
 
@@ -119,6 +127,9 @@ impl eframe::App for TemplateApp {
         if !self.pause {
             ctx.request_repaint();
             self.sim.step(&self.sim_cfg);
+            let width = self.sim.width();
+            self.sim.h_field[(width / 2, width / 2, width / 2, 1)] = 10.;
+            //self.sim.e_field[(width/2,width/2,width/2,1)] = 10.;
         }
 
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
@@ -130,6 +141,16 @@ impl eframe::App for TemplateApp {
             ui.checkbox(&mut self.show_minimal_grid, "Show minimal grid");
 
             ui.strong("Field visualization");
+
+            ui.horizontal(|ui| {
+                ui.checkbox(&mut self.enable_streamers, "Streamers");
+                ui.add(
+                    DragValue::new(&mut self.streamer_step)
+                        .prefix("dt: ")
+                        .speed(1e-3),
+                );
+            });
+
             ui.horizontal(|ui| {
                 ui.checkbox(&mut self.show_e_grid, "Show E field grid");
                 ui.checkbox(&mut self.show_h_grid, "H grid");
@@ -193,20 +214,21 @@ impl eframe::App for TemplateApp {
                     .with_desired_size(ui.available_size())
                     .show(ui, |thr| {
                         let paint = thr.painter();
+
+                        if self.enable_streamers {
+                            self.streamers.step(&self.sim, paint, self.streamer_step, 0.01, 0.25);
+                        }
+
                         if self.show_grid {
                             draw_grid(
                                 paint,
                                 self.sim.width(),
                                 Stroke::new(1., Color32::from_gray(36)),
                             );
-                        } 
+                        }
 
                         if self.show_minimal_grid {
-                            draw_minimal_grid(
-                                paint,
-                                self.sim.width(),
-                                Color32::LIGHT_GRAY,
-                            );
+                            draw_minimal_grid(paint, self.sim.width(), Color32::LIGHT_GRAY);
                         }
 
                         let e_color = Stroke::new(1., Color32::YELLOW);
@@ -226,13 +248,11 @@ impl eframe::App for TemplateApp {
                         }
 
                         if self.show_e_mag {
-                            draw_efield_mag(paint, &self.sim, e_color.color, self.vect_scale*10.);
+                            draw_efield_mag(paint, &self.sim, e_color.color, self.vect_scale * 10.);
                         }
                         if self.show_h_mag {
-                            draw_hfield_mag(paint, &self.sim, h_color.color, self.vect_scale*10.);
+                            draw_hfield_mag(paint, &self.sim, h_color.color, self.vect_scale * 10.);
                         }
-
-
                     });
             });
         });
@@ -240,7 +260,7 @@ impl eframe::App for TemplateApp {
 }
 
 fn espace(width: usize, v: Vec3) -> Vec3 {
-    v - Vec3::splat(width as f32/2.)
+    v - Vec3::splat(width as f32 / 2.)
 }
 
 fn draw_grid(paint: &Painter3D, width: usize, grid_stroke: Stroke) {
@@ -300,7 +320,7 @@ fn draw_field_grid(
             for k in 0..width {
                 for (coord, unit_vect) in [Vec3::X, Vec3::Y, Vec3::Z].into_iter().enumerate() {
                     let base = Vec3::new(i as f32, j as f32, k as f32);
-                    let base = base + offset * (Vec3::ONE - unit_vect);
+                    let base = base + offset * (Vec3::ONE - unit_vect).abs();
                     let extent = field[(i, j, k, coord)];
 
                     let pos = espace(width, base);
@@ -339,14 +359,7 @@ fn draw_field_vect(
 
                 let pos = espace(width, base);
                 let end = pos + extent * scale;
-                screenspace_arrow(
-                    paint,
-                    pos,
-                    end,
-                    stroke,
-                )
-
-                
+                screenspace_arrow(paint, pos, end, stroke)
             }
         }
     }
@@ -385,28 +398,102 @@ fn draw_hfield_mag(paint: &Painter3D, sim: &Sim, color: Color32, scale: f32) {
     draw_field_magnitude(paint, sim.h_field(), sim.width(), color, scale, 0.5);
 }
 
-
-
 fn screenspace_arrow(paint: &Painter3D, pos: Vec3, end: Vec3, stroke: Stroke) {
     let screen_pos = paint.internal_transform().world_to_egui(pos);
     let screen_end = paint.internal_transform().world_to_egui(end);
     let screen_len = screen_pos.0.to_pos2().distance(screen_end.0.to_pos2());
 
-    paint.arrow(
-        pos,
-        (end - pos).normalize_or_zero(),
-        screen_len,
-        stroke,
-    );
+    paint.arrow(pos, (end - pos).normalize_or_zero(), screen_len, stroke);
 }
 
-fn trace_mag_vects(
-) {
+struct Streamers {
+    points: Vec<Vec3>,
 }
 
-/// Returns (E, H)
-fn sample(sim: &Sim, pos: Vec3) -> (Vec3, Vec3) {
-    let corner = pos.floor();
-    let mag_corner = (pos - 0.5).floor();
-    todo!()
+impl Streamers {
+    pub fn new(sim: &Sim, n: usize) -> Self {
+        let mut rng = rand::thread_rng();
+
+        Self {
+            points: (0..n).map(|_| Self::random_pos(sim, &mut rng)).collect(),
+        }
+    }
+
+    fn random_pos(sim: &Sim, rng: &mut impl Rng) -> Vec3 {
+        Vec3::new(
+            rng.gen_range(0.0..=sim.width() as f32 - 1.0),
+            rng.gen_range(0.0..=sim.width() as f32 - 1.0),
+            rng.gen_range(0.0..=sim.width() as f32 - 1.0),
+        )
+    }
+
+    fn step(&mut self, sim: &Sim, paint: &Painter3D, dt: f32, shimmer: f64, scale: f32) {
+        let mut rng = rand::thread_rng();
+        for point in &mut self.points {
+            let width = sim.width() as f32;
+            let out_of_bounds = 
+            point
+                .to_array()
+                .into_iter()
+                .any(|x| x < 0.0 || x > width - 1.0);
+
+            if out_of_bounds || rng.gen_bool(shimmer) {
+                *point = Self::random_pos(sim, &mut rng);
+                continue;
+            }
+
+            let e = interp(sim.e_field(), *point);
+
+            let before = *point;
+            let after = *point + e * scale;
+
+            *point += e * dt;
+
+            paint.line(
+                espace(sim.width(), before),
+                espace(sim.width(), after),
+                Stroke::new(1., Color32::WHITE),
+            );
+        }
+    }
+}
+
+fn read_array4(field: &Array4<f32>, i: isize, j: isize, k: isize) -> Option<Vec3> {
+    if i < 0 || j < 0 || k < 0 {
+        return None;
+    }
+
+    let [i, j, k] = [i, j, k].map(|x| x as usize);
+    Some(Vec3::new(
+        *field.get((i, j, k, 0))?,
+        *field.get((i, j, k, 1))?,
+        *field.get((i, j, k, 2))?,
+    ))
+}
+
+fn read_array4_or_zero(arr: &Array4<f32>, i: isize, j: isize, k: isize) -> Vec3 {
+    read_array4(arr, i, j, k).unwrap_or(Vec3::ZERO)
+}
+
+fn interp(arr: &Array4<f32>, pos: Vec3) -> Vec3 {
+    let fr = pos.fract();
+    let [i, j, k] = pos.floor().to_array().map(|x| x as isize);
+
+    read_array4_or_zero(arr, i, j, k)
+        .lerp(read_array4_or_zero(arr, i + 1, j, k), fr.x)
+        .lerp(
+            read_array4_or_zero(arr, i, j + 1, k)
+                .lerp(read_array4_or_zero(arr, i + 1, j + 1, k), fr.x),
+            fr.y,
+        )
+        .lerp(
+            read_array4_or_zero(arr, i, j, k + 1)
+                .lerp(read_array4_or_zero(arr, i + 1, j, k + 1), fr.x)
+                .lerp(
+                    read_array4_or_zero(arr, i, j + 1, k + 1)
+                        .lerp(read_array4_or_zero(arr, i + 1, j + 1, k + 1), fr.x),
+                    fr.y,
+                ),
+            fr.z,
+        )
 }
