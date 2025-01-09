@@ -11,6 +11,7 @@ use crate::sim::{Sim, SimConfig};
 pub struct TemplateApp {
     sim: Sim,
     sim_cfg: SimConfig,
+    time: f32,
 
     show_grid: bool,
     show_minimal_grid: bool,
@@ -74,6 +75,7 @@ impl Default for TemplateApp {
         Self {
             streamers: Streamers::new(&sim, 5000),
             enable_streamers: StreamersMode::default(),
+            time: 0.,
             streamer_step: 0.01,
 
             pause: false,
@@ -136,10 +138,12 @@ impl eframe::App for TemplateApp {
             ctx.request_repaint();
             self.sim.step(&self.sim_cfg);
             let width = self.sim.width();
+            self.time += self.sim_cfg.dt;
 
-            self.sim.h_field[(width / 2, width / 2, width / 2, 0)] = 1.;
-            self.sim.h_field[(width / 2, width / 2, width / 2, 1)] = 3.;
-            self.sim.h_field[(width / 2, width / 2, width / 2, 2)] = 2.;
+            let k = (self.time / 3.).cos();
+            self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.1 * k;
+            self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 10. * k;
+            self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = -0.2 * k;
             //self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.;
             //self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 0.;
             //self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = 0.;
@@ -198,6 +202,8 @@ impl eframe::App for TemplateApp {
                 ui.add(DragValue::new(&mut self.new_width).prefix("Width: "));
                 if ui.button("Reset").clicked() {
                     self.sim = random_sim(self.new_width);
+                    self.streamers = Streamers::new(&self.sim, self.streamers.points.len());
+                    self.time = 0.0;
                 }
             });
             ui.add(
@@ -238,7 +244,7 @@ impl eframe::App for TemplateApp {
                             paint,
                             self.streamer_step,
                             0.001,
-                            1.0,
+                            0.2,
                             self.enable_streamers,
                         );
 
@@ -490,11 +496,16 @@ impl Streamers {
 
             *point += field * dt;
 
+            let stroke = 
+                Stroke::new(1., Color32::WHITE);
+            screenspace_arrow(paint, espace(sim.width(), before), espace(sim.width(), after), stroke);
+            /*
             paint.line(
                 espace(sim.width(), before),
                 espace(sim.width(), after),
                 Stroke::new(1., Color32::WHITE),
             );
+            */
         }
     }
 }
