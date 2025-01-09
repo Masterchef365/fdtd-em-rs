@@ -137,7 +137,12 @@ impl eframe::App for TemplateApp {
             self.sim.step(&self.sim_cfg);
             let width = self.sim.width();
 
-            self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 1.;
+            self.sim.h_field[(width / 2, width / 2, width / 2, 0)] = 1.;
+            self.sim.h_field[(width / 2, width / 2, width / 2, 1)] = 3.;
+            self.sim.h_field[(width / 2, width / 2, width / 2, 2)] = 2.;
+            //self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.;
+            //self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 0.;
+            //self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = 0.;
             //self.sim.e_field[(width/2,width/2,width/2,1)] = 10.;
         }
 
@@ -232,8 +237,8 @@ impl eframe::App for TemplateApp {
                             &self.sim,
                             paint,
                             self.streamer_step,
-                            0.01,
-                            0.25,
+                            0.001,
+                            1.0,
                             self.enable_streamers,
                         );
 
