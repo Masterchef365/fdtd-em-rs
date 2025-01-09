@@ -29,9 +29,17 @@ pub struct TemplateApp {
 
     streamers: Streamers,
     streamer_step: f32,
-    enable_streamers: bool,
+    enable_streamers: StreamersMode,
 
     vect_scale: f32,
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq)]
+enum StreamersMode {
+    #[default]
+    Off,
+    HField,
+    EField,
 }
 
 fn random_sim(width: usize) -> Sim {
@@ -65,7 +73,7 @@ impl Default for TemplateApp {
         let sim = random_sim(10);
         Self {
             streamers: Streamers::new(&sim, 5000),
-            enable_streamers: true,
+            enable_streamers: StreamersMode::default(),
             streamer_step: 0.01,
 
             pause: false,
@@ -144,7 +152,11 @@ impl eframe::App for TemplateApp {
             ui.strong("Field visualization");
 
             ui.horizontal(|ui| {
-                ui.checkbox(&mut self.enable_streamers, "Streamers");
+                //ui.checkbox(&mut self.enable_streamers, "Streamers");
+                ui.label("Streamers");
+                ui.selectable_value(&mut self.enable_streamers, StreamersMode::Off, "Off");
+                ui.selectable_value(&mut self.enable_streamers, StreamersMode::HField, "H vects");
+                ui.selectable_value(&mut self.enable_streamers, StreamersMode::EField, "E vects");
                 ui.add(
                     DragValue::new(&mut self.streamer_step)
                         .prefix("dt: ")
@@ -216,9 +228,14 @@ impl eframe::App for TemplateApp {
                     .show(ui, |thr| {
                         let paint = thr.painter();
 
-                        if self.enable_streamers {
-                            self.streamers.step(&self.sim, paint, self.streamer_step, 0.01, 0.25);
-                        }
+                        self.streamers.step(
+                            &self.sim,
+                            paint,
+                            self.streamer_step,
+                            0.01,
+                            0.25,
+                            self.enable_streamers,
+                        );
 
                         if self.show_grid {
                             draw_grid(
@@ -428,12 +445,25 @@ impl Streamers {
         )
     }
 
-    fn step(&mut self, sim: &Sim, paint: &Painter3D, dt: f32, shimmer: f64, scale: f32) {
+    fn step(
+        &mut self,
+        sim: &Sim,
+        paint: &Painter3D,
+        dt: f32,
+        shimmer: f64,
+        scale: f32,
+        mode: StreamersMode,
+    ) {
+        let is_efield = match mode {
+            StreamersMode::Off => return,
+            StreamersMode::HField => false,
+            StreamersMode::EField => true,
+        };
+
         let mut rng = rand::thread_rng();
         for point in &mut self.points {
             let width = sim.width() as f32;
-            let out_of_bounds = 
-            point
+            let out_of_bounds = point
                 .to_array()
                 .into_iter()
                 .any(|x| x < 0.0 || x > width - 1.0);
@@ -443,12 +473,17 @@ impl Streamers {
                 continue;
             }
 
-            let e = interp(sim.e_field(), *point);
+            let field = if is_efield {
+                sim.e_field()
+            } else {
+                sim.h_field()
+            };
+            let field = interp(field, *point);
 
             let before = *point;
-            let after = *point + e * scale;
+            let after = *point + field * scale;
 
-            *point += e * dt;
+            *point += field * dt;
 
             paint.line(
                 espace(sim.width(), before),
