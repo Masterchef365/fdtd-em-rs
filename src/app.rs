@@ -32,6 +32,8 @@ pub struct TemplateApp {
     streamer_step: f32,
     enable_streamers: StreamersMode,
 
+    magnetization: Array4<f32>,
+
     vect_scale: f32,
 }
 
@@ -43,11 +45,26 @@ enum StreamersMode {
     EField,
 }
 
-fn random_sim(width: usize) -> Sim {
+fn random_sim(width: usize) -> (Sim, Array4<f32>) {
     let mut sim = Sim::new(width);
 
     let unif = rand::distributions::Uniform::new(-1.0, 1.0);
     let mut rng = rand::thread_rng();
+
+    let mut magnetization = Array4::zeros(sim.h_field.dim());
+
+    let c = width / 2;
+
+    for i in c-1..=c+1 {
+    for j in c-1..=c+1 {
+    for k in c-1..=c+1 {
+        magnetization[(i, j, k, 0)] = 0.0;
+        magnetization[(i, j, k, 1)] = 1.0;
+        magnetization[(i, j, k, 2)] = 0.0;
+    }
+    }
+    }
+
 
     /*
     sim.e_field
@@ -66,13 +83,14 @@ fn random_sim(width: usize) -> Sim {
     sim.h_field[(0,0,0,0)] = 10.;
     */
 
-    sim
+    (sim, magnetization)
 }
 
 impl Default for TemplateApp {
     fn default() -> Self {
-        let sim = random_sim(10);
+        let (sim, magnetization) = random_sim(10);
         Self {
+            magnetization,
             streamers: Streamers::new(&sim, 5000),
             enable_streamers: StreamersMode::default(),
             time: 0.,
@@ -81,7 +99,6 @@ impl Default for TemplateApp {
             pause: false,
             new_width: sim.width(),
 
-            sim,
             show_grid: false,
             show_minimal_grid: true,
 
@@ -102,6 +119,8 @@ impl Default for TemplateApp {
                 mu: 1.,
                 eps: 1.,
             },
+
+            sim,
         }
     }
 }
@@ -136,14 +155,15 @@ impl eframe::App for TemplateApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if !self.pause {
             ctx.request_repaint();
-            self.sim.step(&self.sim_cfg);
+            self.sim.step(&self.sim_cfg, &self.magnetization);
             let width = self.sim.width();
             self.time += self.sim_cfg.dt;
 
             let k = (self.time / 3.).cos();
-            self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.1 * k;
-            self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 10. * k;
-            self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = -0.2 * k;
+
+            //self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.1 * k;
+            //self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 10. * k;
+            //self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = -0.2 * k;
             //self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.;
             //self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 0.;
             //self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = 0.;
@@ -201,7 +221,7 @@ impl eframe::App for TemplateApp {
             ui.horizontal(|ui| {
                 ui.add(DragValue::new(&mut self.new_width).prefix("Width: "));
                 if ui.button("Reset").clicked() {
-                    self.sim = random_sim(self.new_width);
+                    (self.sim, self.magnetization) = random_sim(self.new_width);
                     self.streamers = Streamers::new(&self.sim, self.streamers.points.len());
                     self.time = 0.0;
                 }
@@ -228,7 +248,7 @@ impl eframe::App for TemplateApp {
             );
 
             if ui.button("Step").clicked() {
-                self.sim.step(&self.sim_cfg);
+                self.sim.step(&self.sim_cfg, &self.magnetization);
             }
         });
 

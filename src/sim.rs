@@ -29,9 +29,9 @@ impl Sim {
         self.width
     }
 
-    pub fn step(&mut self, cfg: &SimConfig) {
+    pub fn step(&mut self, cfg: &SimConfig, magnetization: &Array4<f32>) {
 
-        half_step(&mut self.e_field, &self.h_field, cfg.scaling(), self.width);
+        half_step(&mut self.e_field, &self.h_field, cfg.scaling(), self.width, Some(magnetization));
 
         let width = self.width();
         for xi in 0..width {
@@ -45,7 +45,7 @@ impl Sim {
             }
         }
 
-        half_step(&mut self.h_field, &self.e_field, -cfg.scaling(), self.width);
+        half_step(&mut self.h_field, &self.e_field, -cfg.scaling(), self.width, None);
 
         let width = self.width();
         for xi in 0..width {
@@ -85,17 +85,24 @@ const Z: usize = 2;
 /// Some Numerical Techniques for Maxwell's
 /// Equations in Different Types of Geometries
 /// (Bengt Fornberg)
-fn half_step(a: &mut Array4<f32>, b: &Array4<f32>, scale: f32, width: usize) {
+fn half_step(a: &mut Array4<f32>, b: &Array4<f32>, scale: f32, width: usize, mag: Option<&Array4<f32>>) {
+    let get = |coord: (usize, usize, usize, usize)| {
+        match mag {
+            Some(mag) => mag[coord] + b[coord],
+            None => b[coord],
+        }
+    };
+
     let dx = |(xi, yi, zi): (usize, usize, usize), coord: usize| {
-        b[(xi + 1, yi, zi, coord)] - b[(xi - 1, yi, zi, coord)]
+        get((xi + 1, yi, zi, coord)) - get((xi - 1, yi, zi, coord))
     };
 
     let dy = |(xi, yi, zi): (usize, usize, usize), coord: usize| {
-        b[(xi, yi + 1, zi, coord)] - b[(xi, yi - 1, zi, coord)]
+        get((xi, yi + 1, zi, coord)) - get((xi, yi - 1, zi, coord))
     };
 
     let dz = |(xi, yi, zi): (usize, usize, usize), coord: usize| {
-        b[(xi, yi, zi + 1, coord)] - b[(xi, yi, zi - 1, coord)]
+        get((xi, yi, zi + 1, coord)) - get((xi, yi, zi - 1, coord))
     };
 
     for xi in 1..width - 1 {
