@@ -12,11 +12,11 @@ pub struct Wire {
 
 pub struct Port(String);
 
+pub type WireId = (IntPos3, IntPos3);
+
 #[derive(Default)]
 pub struct Wiring3D {
-    /// Keyed so that for ((ax, ay, az), (bx, by, bz)), 
-    /// then ax <= bx, ay <= by, az <= bz, and a != b.
-    wires: HashMap<(IntPos3, IntPos3), Wire>,
+    wires: HashMap<WireId, Wire>,
     ports: HashMap<IntPos3, Port>,
 }
 
@@ -102,7 +102,28 @@ impl WireEditor3D {
 }
 
 impl Wiring3D {
-    fn draw(&self, width: usize, paint: &Painter3D) {
+    pub fn insert(&mut self, a: IntPos3, b: IntPos3, wire: Wire) -> Option<Wire> {
+        self.wires.insert((a, b), wire)
+    }
+
+    pub fn get(&self, wire_id @ (a, b): WireId) -> Option<&Wire> {
+        self.wires.get(&wire_id).or_else(|| self.wires.get(&(b, a)))
+    }
+
+    pub fn get_mut(&mut self, wire_id @ (a, b): WireId) -> Option<&mut Wire> {
+        if self.wires.contains_key(&wire_id) {
+            self.wires.get_mut(&wire_id)
+        } else {
+            self.wires.get_mut(&(b, a))
+        }
+    }
+
+    pub fn remove(&mut self, wire_id @ (a, b): WireId) {
+        self.wires.remove(&wire_id);
+        self.wires.remove(&(b, a));
+    }
+
+    pub fn draw(&self, width: usize, paint: &Painter3D) {
         let stroke = Stroke::new(1.0, Color32::WHITE);
         for (a, b) in self.wires.keys() {
             paint.line(
@@ -112,7 +133,6 @@ impl Wiring3D {
             );
         }
     }
-
 }
 
 impl Wire {
@@ -123,7 +143,16 @@ impl Wire {
         });
     }
 
-    fn screenspace_dist_approx(paint: &Painter3D, pt: Vec3) -> f32 {
+    
+}
 
-    }
+fn screenspace_dist_approx(wire_id: WireId, paint: &Painter3D, width: usize, pt: Vec3) -> Option<f32> {
+    let pt = paint.transform(pt)?;
+
+    let (a, b) = wire_id;
+
+    let dist_a = pt.distance(paint.transform(espacet(width, a))?);
+    let dist_b = pt.distance(paint.transform(espacet(width, b))?);
+
+    Some(dist_a.min(dist_b))
 }
