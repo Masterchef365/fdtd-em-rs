@@ -1,4 +1,4 @@
-use egui::{Color32, DragValue, SidePanel, Stroke, Vec2};
+use egui::{Color32, DragValue, SidePanel, Stroke, Ui, Vec2};
 use ndarray::{Array3, Array4};
 use rand::{prelude::Distribution, Rng};
 use threegui::{threegui, Painter3D, ThreeUi, Vec3};
@@ -13,6 +13,21 @@ pub struct TemplateApp {
     sim_cfg: SimConfig,
     time: f32,
 
+    new_width: usize,
+    pause: bool,
+
+    grid_vis: GridVisualizationConfig,
+    streamers: Streamers,
+    streamer_step: f32,
+    enable_streamers: StreamersMode,
+
+    magnetization: Array4<f32>,
+
+}
+
+struct GridVisualizationConfig {
+    vect_scale: f32,
+
     show_grid: bool,
     show_minimal_grid: bool,
 
@@ -24,17 +39,6 @@ pub struct TemplateApp {
 
     show_e_mag: bool,
     show_h_mag: bool,
-
-    new_width: usize,
-    pause: bool,
-
-    streamers: Streamers,
-    streamer_step: f32,
-    enable_streamers: StreamersMode,
-
-    magnetization: Array4<f32>,
-
-    vect_scale: f32,
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -92,26 +96,14 @@ impl Default for TemplateApp {
         Self {
             magnetization,
             streamers: Streamers::new(&sim, 5000),
-            enable_streamers: StreamersMode::default(),
+            enable_streamers: StreamersMode::HField,
             time: 0.,
             streamer_step: 0.01,
 
             pause: false,
             new_width: sim.width(),
 
-            show_grid: false,
-            show_minimal_grid: true,
-
-            show_e_grid: false,
-            show_h_grid: false,
-
-            show_e_vect: true,
-            show_h_vect: true,
-
-            show_e_mag: false,
-            show_h_mag: false,
-
-            vect_scale: 0.5,
+            grid_vis: GridVisualizationConfig::default(),
 
             sim_cfg: SimConfig {
                 dx: 1.,
@@ -124,6 +116,26 @@ impl Default for TemplateApp {
         }
     }
 }
+
+ impl Default for GridVisualizationConfig {
+     fn default() -> Self {
+         Self {
+            show_e_grid: false,
+            show_h_grid: false,
+
+            show_e_vect: true,
+            show_h_vect: true,
+
+            show_e_mag: false,
+            show_h_mag: false,
+
+            show_grid: false,
+            show_minimal_grid: true,
+
+            vect_scale: 0.5,
+         }
+     }
+ }
 
 impl TemplateApp {
     /// Called once before the first frame.
@@ -175,12 +187,16 @@ impl eframe::App for TemplateApp {
 
         SidePanel::left("left panel").show(ctx, |ui| {
             ui.strong("Background grid");
-            ui.checkbox(&mut self.show_grid, "Show grid");
-            ui.checkbox(&mut self.show_minimal_grid, "Show minimal grid");
+            ui.checkbox(&mut self.grid_vis.show_grid, "Show grid");
+            ui.checkbox(&mut self.grid_vis.show_minimal_grid, "Show minimal grid");
 
             ui.strong("Field visualization");
 
-            ui.horizontal(|ui| {
+            ui.collapsing("Streamers", |ui| {
+                self.grid_vis.show_ui(ui);
+            });
+
+            ui.collapsing("Streamers", |ui| {
                 //ui.checkbox(&mut self.enable_streamers, "Streamers");
                 ui.label("Streamers");
                 ui.selectable_value(&mut self.enable_streamers, StreamersMode::Off, "Off");
@@ -192,25 +208,6 @@ impl eframe::App for TemplateApp {
                         .speed(1e-3),
                 );
             });
-
-            ui.horizontal(|ui| {
-                ui.checkbox(&mut self.show_e_grid, "Show E field grid");
-                ui.checkbox(&mut self.show_h_grid, "H grid");
-            });
-            ui.horizontal(|ui| {
-                ui.checkbox(&mut self.show_e_vect, "Show E field vects");
-                ui.checkbox(&mut self.show_h_vect, "H vects");
-            });
-            ui.horizontal(|ui| {
-                ui.checkbox(&mut self.show_e_mag, "Show E field mag");
-                ui.checkbox(&mut self.show_h_mag, "H vects");
-            });
-
-            ui.add(
-                DragValue::new(&mut self.vect_scale)
-                    .prefix("Scale: ")
-                    .speed(1e-3),
-            );
 
             ui.separator();
             ui.strong("State control");
@@ -268,43 +265,71 @@ impl eframe::App for TemplateApp {
                             self.enable_streamers,
                         );
 
-                        if self.show_grid {
-                            draw_grid(
-                                paint,
-                                self.sim.width(),
-                                Stroke::new(1., Color32::from_gray(36)),
-                            );
-                        }
-
-                        if self.show_minimal_grid {
-                            draw_minimal_grid(paint, self.sim.width(), Color32::LIGHT_GRAY);
-                        }
-
-                        let e_color = Stroke::new(1., Color32::YELLOW);
-                        let h_color = Stroke::new(1., Color32::RED);
-                        if self.show_e_grid {
-                            draw_efield_grid(paint, &self.sim, e_color, self.vect_scale);
-                        }
-                        if self.show_h_grid {
-                            draw_hfield_grid(paint, &self.sim, h_color, self.vect_scale);
-                        }
-
-                        if self.show_e_vect {
-                            draw_efield_vect(paint, &self.sim, e_color, self.vect_scale);
-                        }
-                        if self.show_h_vect {
-                            draw_hfield_vect(paint, &self.sim, h_color, self.vect_scale);
-                        }
-
-                        if self.show_e_mag {
-                            draw_efield_mag(paint, &self.sim, e_color.color, self.vect_scale * 10.);
-                        }
-                        if self.show_h_mag {
-                            draw_hfield_mag(paint, &self.sim, h_color.color, self.vect_scale * 10.);
-                        }
+                        self.grid_vis.draw(&self.sim, paint);
                     });
             });
         });
+    }
+}
+
+impl GridVisualizationConfig {
+    fn show_ui(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.show_e_grid, "Show E field grid");
+            ui.checkbox(&mut self.show_h_grid, "H grid");
+        });
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.show_e_vect, "Show E field vects");
+            ui.checkbox(&mut self.show_h_vect, "H vects");
+        });
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.show_e_mag, "Show E field mag");
+            ui.checkbox(&mut self.show_h_mag, "H vects");
+        });
+
+        ui.add(
+            DragValue::new(&mut self.vect_scale)
+            .prefix("Scale: ")
+            .speed(1e-3),
+        );
+
+    }
+
+    fn draw(&self, sim: &Sim, paint: &Painter3D) {
+        if self.show_grid {
+            draw_grid(
+                paint,
+                sim.width(),
+                Stroke::new(1., Color32::from_gray(36)),
+            );
+        }
+
+        if self.show_minimal_grid {
+            draw_minimal_grid(paint, sim.width(), Color32::LIGHT_GRAY);
+        }
+
+        let e_color = Stroke::new(1., Color32::YELLOW);
+        let h_color = Stroke::new(1., Color32::RED);
+        if self.show_e_grid {
+            draw_efield_grid(paint, &sim, e_color, self.vect_scale);
+        }
+        if self.show_h_grid {
+            draw_hfield_grid(paint, &sim, h_color, self.vect_scale);
+        }
+
+        if self.show_e_vect {
+            draw_efield_vect(paint, &sim, e_color, self.vect_scale);
+        }
+        if self.show_h_vect {
+            draw_hfield_vect(paint, &sim, h_color, self.vect_scale);
+        }
+
+        if self.show_e_mag {
+            draw_efield_mag(paint, &sim, e_color.color, self.vect_scale * 10.);
+        }
+        if self.show_h_mag {
+            draw_hfield_mag(paint, &sim, h_color.color, self.vect_scale * 10.);
+        }
     }
 }
 
