@@ -16,8 +16,8 @@ pub type WireId = (IntPos3, IntPos3);
 
 #[derive(Default)]
 pub struct Wiring3D {
-    wires: HashMap<WireId, Wire>,
-    ports: HashMap<IntPos3, Port>,
+    pub wires: HashMap<WireId, Wire>,
+    pub ports: HashMap<IntPos3, Port>,
 }
 
 pub struct WireEditor3D {
@@ -59,6 +59,23 @@ fn find_closest_grid_point_screenspace(width: usize, paint: &Painter3D, screen_p
     closest.map(|c| (c, closest_dist))
 }
 
+fn find_closest_wire_screenspace(width: usize, wiring: &Wiring3D, paint: &Painter3D, screen_pos: Pos2) -> Option<(WireId, f32)> {
+    let mut closest = None;
+    let mut closest_dist = 99e9;
+
+    for &wire_id in wiring.wires.keys() {
+        if let Some(dist) = screenspace_wire_dist_approx(wire_id, paint, width, screen_pos) {
+            if dist < closest_dist {
+                closest_dist = dist;
+                closest = Some(wire_id);
+            }
+        }
+    }
+
+    closest.map(|c| (c, closest_dist))
+}
+
+
 impl WireEditor3D {
     pub fn draw(&mut self, width: usize, thr: &ThreeUi, wiring: &mut Wiring3D) {
         let paint = thr.painter();
@@ -66,7 +83,7 @@ impl WireEditor3D {
         // Draw wiring
         wiring.draw(width, paint);
 
-        // Drawing the circular grid cursor
+        // Projecting the cursor
         let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else { return; };
 
         let Some((cursor_pos_3d, cursor_grid_dist)) = find_closest_grid_point_screenspace(width, paint, cursor_pos) else { return; };
@@ -124,7 +141,7 @@ impl Wiring3D {
     }
 
     pub fn draw(&self, width: usize, paint: &Painter3D) {
-        let stroke = Stroke::new(1.0, Color32::WHITE);
+        let stroke = Stroke::new(1.0, Color32::GRAY);
         for (a, b) in self.wires.keys() {
             paint.line(
                 espacet(width, *a),
@@ -146,9 +163,7 @@ impl Wire {
     
 }
 
-fn screenspace_dist_approx(wire_id: WireId, paint: &Painter3D, width: usize, pt: Vec3) -> Option<f32> {
-    let pt = paint.transform(pt)?;
-
+fn screenspace_wire_dist_approx(wire_id: WireId, paint: &Painter3D, width: usize, pt: Pos2) -> Option<f32> {
     let (a, b) = wire_id;
 
     let dist_a = pt.distance(paint.transform(espacet(width, a))?);
