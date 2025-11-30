@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use egui::{Color32, DragValue, Pos2, Stroke, Ui};
-use threegui::{Painter3D, ThreeUi};
+use threegui::{Painter3D, ThreeUi, Vec3};
 
 use crate::{common::{espacet, IntPos3}, sim::Sim};
 
@@ -60,10 +60,11 @@ fn find_closest_grid_point_screenspace(width: usize, paint: &Painter3D, screen_p
 }
 
 impl WireEditor3D {
-    pub fn draw(&mut self, sim: &Sim, thr: &ThreeUi) {
+    pub fn draw(&mut self, width: usize, thr: &ThreeUi, wiring: &mut Wiring3D) {
         let paint = thr.painter();
 
-        let width = sim.width();
+        // Draw wiring
+        wiring.draw(width, paint);
 
         // Drawing the circular grid cursor
         let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else { return; };
@@ -111,13 +112,18 @@ impl Wiring3D {
             );
         }
     }
+
 }
 
 impl Wire {
     pub fn show_ui(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label("Resistance: ");
-            ui.add(DragValue::new(&mut self.resistance).suffix(""));
+            ui.add(DragValue::new(&mut self.resistance).suffix("Ohms"));
         });
+    }
+
+    fn screenspace_dist_approx(paint: &Painter3D, pt: Vec3) -> f32 {
+
     }
 }
