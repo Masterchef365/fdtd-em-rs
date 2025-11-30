@@ -42,13 +42,16 @@ impl WireEditor3D {
 
         let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else { return; };
 
-        let Some(pos) = find_closest_grid_point_screenspace(width, paint, cursor_pos) else { return; };
+        let Some(cursor_pos_3d) = find_closest_grid_point_screenspace(width, paint, cursor_pos) else { return; };
 
         paint.circle(
-            espacet(width, pos),
+            espacet(width, cursor_pos_3d),
             10.0,
             (1.0, Color32::GREEN),
         );
+
+
+
 
     }
 }

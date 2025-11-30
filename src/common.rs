@@ -57,5 +57,17 @@ pub fn espace(width: usize, v: Vec3) -> Vec3 {
 }
 
 pub fn espacet(width: usize, (x, y, z): (usize, usize, usize)) -> Vec3 {
-    Vec3::new(x as f32, y as f32, z as f32) - Vec3::splat(width as f32 / 2.)
+    espace(width, Vec3::new(x as f32, y as f32, z as f32))
 }
+
+
+/*
+pub fn espace_inv(width: usize, v: Vec3) -> Vec3 {
+    v + Vec3::splat(width as f32 / 2.)
+}
+
+pub fn espacet_inv(width: usize, v: Vec3) -> (usize, usize, usize) {
+    let a = espace_inv(width, v);
+    (a.x as usize, a.y as usize, a.z as usize)
+}
+*/
