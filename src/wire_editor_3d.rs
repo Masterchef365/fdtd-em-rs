@@ -101,17 +101,17 @@ impl WireEditor3D {
         else {
             return;
         };
-        let Some((wire_id, wire_dist)) =
-            find_closest_wire_screenspace(width, wiring, paint, cursor_pos)
-        else {
-            return;
-        };
+
+
+        //let Some((wire_id, wire_dist)) =
+        let closest_wire = 
+            find_closest_wire_screenspace(width, wiring, paint, cursor_pos);
 
         let cursor_circle_size = 10.0;
 
         let cursor_color = Color32::GREEN;
 
-        if cursor_grid_dist < wire_dist {
+        if let Some((wire_id, wire_dist)) = closest_wire && wire_dist < cursor_grid_dist {
             let stroke = Stroke::new(1.0, cursor_color);
             let (a, b) = wire_id;
             paint.line(espacet(width, a), espacet(width, b), stroke);
