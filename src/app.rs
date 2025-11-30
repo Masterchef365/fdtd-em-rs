@@ -224,7 +224,7 @@ impl eframe::App for TemplateApp {
 
                         self.grid_vis.draw(&self.sim, paint);
 
-                        self.wire_editor_3d.draw(&self.sim, paint);
+                        self.wire_editor_3d.draw(&self.sim, thr);
                     });
             });
         });

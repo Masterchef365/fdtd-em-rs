@@ -3,6 +3,7 @@ use ndarray::Array4;
 use rand::prelude::Distribution;
 use threegui::{Painter3D, Vec3};
 
+pub type IntPos3 = (usize, usize, usize);
 
 fn read_array4(field: &Array4<f32>, i: isize, j: isize, k: isize) -> Option<Vec3> {
     if i < 0 || j < 0 || k < 0 {
@@ -56,7 +57,7 @@ pub fn espace(width: usize, v: Vec3) -> Vec3 {
     v - Vec3::splat(width as f32 / 2.)
 }
 
-pub fn espacet(width: usize, (x, y, z): (usize, usize, usize)) -> Vec3 {
+pub fn espacet(width: usize, (x, y, z): IntPos3) -> Vec3 {
     espace(width, Vec3::new(x as f32, y as f32, z as f32))
 }
 
@@ -66,7 +67,7 @@ pub fn espace_inv(width: usize, v: Vec3) -> Vec3 {
     v + Vec3::splat(width as f32 / 2.)
 }
 
-pub fn espacet_inv(width: usize, v: Vec3) -> (usize, usize, usize) {
+pub fn espacet_inv(width: usize, v: Vec3) -> IntPos3 {
     let a = espace_inv(width, v);
     (a.x as usize, a.y as usize, a.z as usize)
 }

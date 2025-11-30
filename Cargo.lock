@@ -2859,7 +2859,6 @@ dependencies = [
 [[package]]
 name = "threegui"
 version = "0.1.0"
-source = "git+https://github.com/Masterchef365/threegui.git?rev=a904982#a9049822d0ef4a48012c99d874de5c50b3231b5c"
 dependencies = [
  "egui",
  "glam",
