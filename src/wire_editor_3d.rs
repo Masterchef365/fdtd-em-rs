@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use egui::{Color32, DragValue, Pos2, Stroke, Ui};
+use egui::{Color32, DragValue, Pos2, Stroke, Ui, Vec2};
 use threegui::{Painter3D, ThreeUi, Vec3};
 
-use crate::{common::{espacet, IntPos3}, sim::Sim};
+use crate::{
+    common::{espacet, IntPos3},
+    sim::Sim,
+};
 
 pub struct Wire {
     /// Ohms
@@ -31,16 +34,17 @@ enum Selection {
 
 impl Default for WireEditor3D {
     fn default() -> Self {
-        Self {
-            sel_pos: None,
-        }
+        Self { sel_pos: None }
     }
 }
 
-fn find_closest_grid_point_screenspace(width: usize, paint: &Painter3D, screen_pos: Pos2) -> Option<(IntPos3, f32)> {
+fn find_closest_grid_point_screenspace(
+    width: usize,
+    paint: &Painter3D,
+    screen_pos: Pos2,
+) -> Option<(IntPos3, f32)> {
     let mut closest = None;
     let mut closest_dist = 99e9;
-
 
     for i in 0..width {
         for j in 0..width {
@@ -59,12 +63,17 @@ fn find_closest_grid_point_screenspace(width: usize, paint: &Painter3D, screen_p
     closest.map(|c| (c, closest_dist))
 }
 
-fn find_closest_wire_screenspace(width: usize, wiring: &Wiring3D, paint: &Painter3D, screen_pos: Pos2) -> Option<(WireId, f32)> {
+fn find_closest_wire_screenspace(
+    width: usize,
+    wiring: &Wiring3D,
+    paint: &Painter3D,
+    screen_pos: Pos2,
+) -> Option<(WireId, f32)> {
     let mut closest = None;
     let mut closest_dist = 99e9;
 
     for &wire_id in wiring.wires.keys() {
-        if let Some(dist) = screenspace_wire_dist_approx(wire_id, paint, width, screen_pos) {
+        if let Some(dist) = screenspace_wire_dist(wire_id, paint, width, screen_pos) {
             if dist < closest_dist {
                 closest_dist = dist;
                 closest = Some(wire_id);
@@ -75,7 +84,6 @@ fn find_closest_wire_screenspace(width: usize, wiring: &Wiring3D, paint: &Painte
     closest.map(|c| (c, closest_dist))
 }
 
-
 impl WireEditor3D {
     pub fn draw(&mut self, width: usize, thr: &ThreeUi, wiring: &mut Wiring3D) {
         let paint = thr.painter();
@@ -84,17 +92,38 @@ impl WireEditor3D {
         wiring.draw(width, paint);
 
         // Projecting the cursor
-        let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else { return; };
+        let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else {
+            return;
+        };
 
-        let Some((cursor_pos_3d, cursor_grid_dist)) = find_closest_grid_point_screenspace(width, paint, cursor_pos) else { return; };
+        let Some((cursor_pos_3d, cursor_grid_dist)) =
+            find_closest_grid_point_screenspace(width, paint, cursor_pos)
+        else {
+            return;
+        };
+        let Some((wire_id, wire_dist)) =
+            find_closest_wire_screenspace(width, wiring, paint, cursor_pos)
+        else {
+            return;
+        };
 
-        let cursor_circle_size = 10.0; 
-        paint.circle(
-            espacet(width, cursor_pos_3d),
-            cursor_circle_size,
-            (1.0, Color32::GREEN),
-        );
+        let cursor_circle_size = 10.0;
 
+        let cursor_color = Color32::GREEN;
+
+        if cursor_grid_dist < wire_dist {
+            let stroke = Stroke::new(1.0, cursor_color);
+            let (a, b) = wire_id;
+            paint.line(espacet(width, a), espacet(width, b), stroke);
+        } else {
+            paint.circle(
+                espacet(width, cursor_pos_3d),
+                cursor_circle_size,
+                (1.0, cursor_color),
+            );
+        }
+
+        /*
         if let Some(Selection::Position(pos)) = self.sel_pos {
             paint.circle(
                 espacet(width, pos),
@@ -107,6 +136,7 @@ impl WireEditor3D {
             self.sel_pos = Some(Selection::Position(cursor_pos_3d));
             return;
         }
+        */
     }
 
     pub fn show_ui(&mut self, ui: &mut Ui, wiring: &mut Wiring3D) {
@@ -143,11 +173,7 @@ impl Wiring3D {
     pub fn draw(&self, width: usize, paint: &Painter3D) {
         let stroke = Stroke::new(1.0, Color32::GRAY);
         for (a, b) in self.wires.keys() {
-            paint.line(
-                espacet(width, *a),
-                espacet(width, *b),
-                stroke,
-            );
+            paint.line(espacet(width, *a), espacet(width, *b), stroke);
         }
     }
 }
@@ -159,15 +185,33 @@ impl Wire {
             ui.add(DragValue::new(&mut self.resistance).suffix("Ohms"));
         });
     }
-
-    
 }
 
-fn screenspace_wire_dist_approx(wire_id: WireId, paint: &Painter3D, width: usize, pt: Pos2) -> Option<f32> {
+fn screenspace_wire_dist(
+    wire_id: WireId,
+    paint: &Painter3D,
+    width: usize,
+    pt: Pos2,
+) -> Option<f32> {
     let (a, b) = wire_id;
 
-    let dist_a = pt.distance(paint.transform(espacet(width, a))?);
-    let dist_b = pt.distance(paint.transform(espacet(width, b))?);
+    let pa = paint.transform(espacet(width, a))?;
+    let pb = paint.transform(espacet(width, b))?;
 
-    Some(dist_a.min(dist_b))
+    let u = pt - pa;
+    let v = pb - pa;
+    let p = proj(u, v);
+
+    if p >= 0.0 && p <= 1.0 {
+        Some(((p * v) - u).length())
+    } else {
+        let dist_a = pt.distance(pa);
+        let dist_b = pt.distance(pb);
+
+        Some(dist_a.min(dist_b))
+    }
+}
+
+fn proj(u: Vec2, v: Vec2) -> f32 {
+    return u.dot(v) / v.dot(v);
 }
