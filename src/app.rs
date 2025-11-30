@@ -1,9 +1,11 @@
-use egui::{Color32, DragValue, SidePanel, Stroke, Ui, Vec2};
-use ndarray::{Array3, Array4};
-use rand::{prelude::Distribution, Rng};
-use threegui::{threegui, Painter3D, ThreeUi, Vec3};
+use egui::{DragValue, SidePanel};
+use ndarray::Array4;
 
-use crate::{field_vis::GridVisualizationConfig, sim::{Sim, SimConfig}, streamers::{Streamers, StreamersMode}};
+use crate::{
+    field_vis::GridVisualizationConfig,
+    sim::{Sim, SimConfig},
+    streamers::{Streamers, StreamersMode},
+};
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 //#[derive(serde::Deserialize, serde::Serialize)]
@@ -22,29 +24,27 @@ pub struct TemplateApp {
     enable_streamers: StreamersMode,
 
     magnetization: Array4<f32>,
-
 }
 
 fn random_sim(width: usize) -> (Sim, Array4<f32>) {
-    let mut sim = Sim::new(width);
+    let sim = Sim::new(width);
 
     let unif = rand::distributions::Uniform::new(-1.0, 1.0);
-    let mut rng = rand::thread_rng();
+    let rng = rand::thread_rng();
 
     let mut magnetization = Array4::zeros(sim.h_field.dim());
 
     let c = width / 2;
 
-    for i in c-1..=c+1 {
-    for j in c-1..=c+1 {
-    for k in c-1..=c+1 {
-        magnetization[(i, j, k, 0)] = 0.0;
-        magnetization[(i, j, k, 1)] = 1.0;
-        magnetization[(i, j, k, 2)] = 0.0;
+    for i in c - 1..=c + 1 {
+        for j in c - 1..=c + 1 {
+            for k in c - 1..=c + 1 {
+                magnetization[(i, j, k, 0)] = 0.0;
+                magnetization[(i, j, k, 1)] = 1.0;
+                magnetization[(i, j, k, 2)] = 0.0;
+            }
+        }
     }
-    }
-    }
-
 
     /*
     sim.e_field
@@ -227,4 +227,3 @@ impl eframe::App for TemplateApp {
         });
     }
 }
-

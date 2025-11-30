@@ -1,10 +1,11 @@
-use egui::{Color32, DragValue, SidePanel, Stroke, Ui, Vec2};
-use ndarray::{Array3, Array4};
-use rand::{prelude::Distribution, Rng};
-use threegui::{threegui, Painter3D, ThreeUi, Vec3};
+use egui::{Color32, DragValue, Stroke, Ui};
+use ndarray::Array4;
+use threegui::{Painter3D, Vec3};
 
-use crate::{common::{espace, screenspace_arrow}, sim::{Sim, SimConfig}};
-
+use crate::{
+    common::{espace, screenspace_arrow},
+    sim::Sim,
+};
 
 pub struct GridVisualizationConfig {
     pub vect_scale: f32,

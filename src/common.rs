@@ -1,9 +1,7 @@
-use egui::{Color32, DragValue, SidePanel, Stroke, Ui, Vec2};
-use ndarray::{Array3, Array4};
-use rand::{prelude::Distribution, Rng};
-use threegui::{threegui, Painter3D, ThreeUi, Vec3};
-
-use crate::sim::{Sim, SimConfig};
+use egui::Stroke;
+use ndarray::Array4;
+use rand::prelude::Distribution;
+use threegui::{Painter3D, Vec3};
 
 
 fn read_array4(field: &Array4<f32>, i: isize, j: isize, k: isize) -> Option<Vec3> {

@@ -30,18 +30,22 @@ impl Sim {
     }
 
     pub fn step(&mut self, cfg: &SimConfig, magnetization: &Array4<f32>) {
-
-        half_step(&mut self.e_field, &(&self.h_field + magnetization), cfg.scaling(), self.width);
+        half_step(
+            &mut self.e_field,
+            &(&self.h_field + magnetization),
+            cfg.scaling(),
+            self.width,
+        );
 
         let width = self.width();
         for xi in 0..width {
             for yi in 0..width {
                 self.e_field[(0, xi, yi, 0)] = 0.0;
-                self.e_field[(width-1, xi, yi, 0)] = 0.0;
+                self.e_field[(width - 1, xi, yi, 0)] = 0.0;
                 self.e_field[(xi, 0, yi, 1)] = 0.0;
-                self.e_field[(xi, width-1, yi, 1)] = 0.0;
+                self.e_field[(xi, width - 1, yi, 1)] = 0.0;
                 self.e_field[(xi, yi, 0, 2)] = 0.0;
-                self.e_field[(xi, yi, width-1, 2)] = 0.0;
+                self.e_field[(xi, yi, width - 1, 2)] = 0.0;
             }
         }
 
@@ -51,11 +55,11 @@ impl Sim {
         for xi in 0..width {
             for yi in 0..width {
                 self.h_field[(0, xi, yi, 0)] = 0.0;
-                self.h_field[(width-1, xi, yi, 0)] = 0.0;
+                self.h_field[(width - 1, xi, yi, 0)] = 0.0;
                 self.h_field[(xi, 0, yi, 1)] = 0.0;
-                self.h_field[(xi, width-1, yi, 1)] = 0.0;
+                self.h_field[(xi, width - 1, yi, 1)] = 0.0;
                 self.h_field[(xi, yi, 0, 2)] = 0.0;
-                self.h_field[(xi, yi, width-1, 2)] = 0.0;
+                self.h_field[(xi, yi, width - 1, 2)] = 0.0;
             }
         }
     }

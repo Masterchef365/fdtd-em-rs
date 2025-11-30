@@ -1,9 +1,11 @@
-use egui::{Color32, DragValue, SidePanel, Stroke, Ui, Vec2};
-use ndarray::{Array3, Array4};
+use egui::{Color32, Stroke};
 use rand::{prelude::Distribution, Rng};
-use threegui::{threegui, Painter3D, ThreeUi, Vec3};
+use threegui::{Painter3D, Vec3};
 
-use crate::{common::{espace, interp, screenspace_arrow}, sim::{Sim, SimConfig}};
+use crate::{
+    common::{espace, interp, screenspace_arrow},
+    sim::Sim,
+};
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
 pub enum StreamersMode {
@@ -74,9 +76,13 @@ impl Streamers {
 
             *point += field * dt;
 
-            let stroke = 
-                Stroke::new(1., Color32::WHITE);
-            screenspace_arrow(paint, espace(sim.width(), before), espace(sim.width(), after), stroke);
+            let stroke = Stroke::new(1., Color32::WHITE);
+            screenspace_arrow(
+                paint,
+                espace(sim.width(), before),
+                espace(sim.width(), after),
+                stroke,
+            );
             /*
             paint.line(
                 espace(sim.width(), before),
