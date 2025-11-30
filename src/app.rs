@@ -4,7 +4,7 @@ use ndarray::Array4;
 use crate::{
     field_vis::GridVisualizationConfig,
     sim::{Sim, SimConfig},
-    streamers::{Streamers, StreamersMode},
+    streamers::{Streamers, StreamersMode}, wire_editor_3d::WireEditor3D,
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -22,6 +22,8 @@ pub struct TemplateApp {
     streamers: Streamers,
     streamer_step: f32,
     enable_streamers: StreamersMode,
+
+    wire_editor_3d: WireEditor3D,
 
     magnetization: Array4<f32>,
 }
@@ -70,6 +72,8 @@ impl Default for TemplateApp {
     fn default() -> Self {
         let (sim, magnetization) = random_sim(10);
         Self {
+            wire_editor_3d: WireEditor3D::default(),
+
             magnetization,
             streamers: Streamers::new(&sim, 5000),
             enable_streamers: StreamersMode::HField,
@@ -146,15 +150,12 @@ impl eframe::App for TemplateApp {
             ui.checkbox(&mut self.grid_vis.show_grid, "Show grid");
             ui.checkbox(&mut self.grid_vis.show_minimal_grid, "Show minimal grid");
 
-            ui.strong("Field visualization");
-
-            ui.collapsing("Streamers", |ui| {
+            ui.collapsing("Field visualization", |ui| {
                 self.grid_vis.show_ui(ui);
             });
 
-            ui.collapsing("Streamers", |ui| {
+            ui.collapsing("Streamers (visualization)", |ui| {
                 //ui.checkbox(&mut self.enable_streamers, "Streamers");
-                ui.label("Streamers");
                 ui.selectable_value(&mut self.enable_streamers, StreamersMode::Off, "Off");
                 ui.selectable_value(&mut self.enable_streamers, StreamersMode::HField, "H vects");
                 ui.selectable_value(&mut self.enable_streamers, StreamersMode::EField, "E vects");
@@ -222,6 +223,8 @@ impl eframe::App for TemplateApp {
                         );
 
                         self.grid_vis.draw(&self.sim, paint);
+
+                        self.wire_editor_3d.draw(&self.sim, paint);
                     });
             });
         });

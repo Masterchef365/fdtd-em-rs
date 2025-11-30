@@ -55,3 +55,7 @@ pub fn screenspace_arrow(paint: &Painter3D, pos: Vec3, end: Vec3, stroke: Stroke
 pub fn espace(width: usize, v: Vec3) -> Vec3 {
     v - Vec3::splat(width as f32 / 2.)
 }
+
+pub fn espace_inv(width: usize, v: Vec3) -> Vec3 {
+    v + Vec3::splat(width as f32 / 2.)
+}
