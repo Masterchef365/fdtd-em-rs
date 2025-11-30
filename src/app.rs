@@ -4,7 +4,7 @@ use ndarray::Array4;
 use crate::{
     field_vis::GridVisualizationConfig,
     sim::{Sim, SimConfig},
-    streamers::{Streamers, StreamersMode}, wire_editor_3d::WireEditor3D,
+    streamers::{Streamers, StreamersMode}, wire_editor_3d::{WireEditor3D, Wiring3D},
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -24,6 +24,7 @@ pub struct TemplateApp {
     enable_streamers: StreamersMode,
 
     wire_editor_3d: WireEditor3D,
+    wires: Wiring3D,
 
     magnetization: Array4<f32>,
 }
@@ -93,6 +94,7 @@ impl Default for TemplateApp {
             },
 
             sim,
+            wires: Wiring3D::default(),
         }
     }
 }

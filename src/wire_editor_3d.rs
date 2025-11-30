@@ -1,22 +1,32 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
-use egui::{Color32, Pos2, Vec2};
-use threegui::{Painter3D, ThreeUi, Vec3};
+use egui::{Color32, DragValue, Pos2, Stroke, Ui};
+use threegui::{Painter3D, ThreeUi};
 
-use crate::{common::{espace, espacet, IntPos3}, sim::Sim};
+use crate::{common::{espacet, IntPos3}, sim::Sim};
 
-struct Wiring3D {
-    wires: HashSet<(IntPos3, IntPos3)>,
-    connections: Vec<(String, IntPos3)>,
+pub struct Wire {
+    /// Ohms
+    resistance: f32,
 }
 
-enum Selection {
-    Position(IntPos3),
-    WireId(usize),
+pub struct Port(String);
+
+#[derive(Default)]
+pub struct Wiring3D {
+    /// Keyed so that for ((ax, ay, az), (bx, by, bz)), 
+    /// then ax <= bx, ay <= by, az <= bz, and a != b.
+    wires: HashMap<(IntPos3, IntPos3), Wire>,
+    ports: HashMap<IntPos3, Port>,
 }
 
 pub struct WireEditor3D {
     sel_pos: Option<Selection>,
+}
+
+enum Selection {
+    Position(IntPos3),
+    WireId((IntPos3, IntPos3)),
 }
 
 impl Default for WireEditor3D {
@@ -55,6 +65,7 @@ impl WireEditor3D {
 
         let width = sim.width();
 
+        // Drawing the circular grid cursor
         let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else { return; };
 
         let Some((cursor_pos_3d, cursor_grid_dist)) = find_closest_grid_point_screenspace(width, paint, cursor_pos) else { return; };
@@ -78,7 +89,35 @@ impl WireEditor3D {
             self.sel_pos = Some(Selection::Position(cursor_pos_3d));
             return;
         }
+    }
 
+    pub fn show_ui(&mut self, ui: &mut Ui, wiring: &mut Wiring3D) {
+        if let Some(Selection::WireId(wire_id)) = self.sel_pos {
+            if let Some(wire) = wiring.wires.get_mut(&wire_id) {
+                wire.show_ui(ui);
+            }
+        }
+    }
+}
 
+impl Wiring3D {
+    fn draw(&self, width: usize, paint: &Painter3D) {
+        let stroke = Stroke::new(1.0, Color32::WHITE);
+        for (a, b) in self.wires.keys() {
+            paint.line(
+                espacet(width, *a),
+                espacet(width, *b),
+                stroke,
+            );
+        }
+    }
+}
+
+impl Wire {
+    pub fn show_ui(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            ui.label("Resistance: ");
+            ui.add(DragValue::new(&mut self.resistance).suffix(""));
+        });
     }
 }
