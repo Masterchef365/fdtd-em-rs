@@ -3,7 +3,7 @@ use ndarray::Array4;
 use threegui::{Painter3D, Vec3};
 
 use crate::{
-    common::{espace, screenspace_arrow},
+    common::{espace, espacet, screenspace_arrow},
     sim::Sim,
 };
 
@@ -103,18 +103,18 @@ fn draw_grid(paint: &Painter3D, width: usize, grid_stroke: Stroke) {
     for i in 0..width {
         for j in 0..width {
             paint.line(
-                espace(width, Vec3::new(j as f32, 0.0, i as f32)),
-                espace(width, Vec3::new(j as f32, width as f32 - 1., i as f32)),
+                espacet(width, (j, 0, i)),
+                espacet(width, (j, width - 1, i)),
                 grid_stroke,
             );
             paint.line(
-                espace(width, Vec3::new(j as f32, i as f32, 0.0)),
-                espace(width, Vec3::new(j as f32, i as f32, width as f32 - 1.)),
+                espacet(width, (j, i, 0)),
+                espacet(width, (j, i, width - 1)),
                 grid_stroke,
             );
             paint.line(
-                espace(width, Vec3::new(0.0, i as f32, j as f32)),
-                espace(width, Vec3::new(width as f32 - 1., i as f32, j as f32)),
+                espacet(width, (0, i, j)),
+                espacet(width, (width - 1, i, j)),
                 grid_stroke,
             );
         }
@@ -126,7 +126,7 @@ fn draw_minimal_grid(paint: &Painter3D, width: usize, color: Color32) {
         for j in 0..width {
             for k in 0..width {
                 paint.circle_filled(
-                    espace(width, Vec3::new(i as f32, j as f32, k as f32)),
+                    espacet(width, (i, j, k)),
                     1.0,
                     color,
                 );
@@ -186,14 +186,13 @@ fn draw_field_vect(
     for i in 0..width {
         for j in 0..width {
             for k in 0..width {
-                let base = Vec3::new(i as f32, j as f32, k as f32);
                 let extent = Vec3::new(
                     field[(i, j, k, 0)],
                     field[(i, j, k, 1)],
                     field[(i, j, k, 2)],
                 );
 
-                let pos = espace(width, base);
+                let pos = espacet(width, (i, j, k));
                 let end = pos + extent * scale;
                 screenspace_arrow(paint, pos, end, stroke)
             }

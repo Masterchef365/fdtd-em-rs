@@ -1,7 +1,7 @@
 use egui::{Color32, Pos2, Vec2};
 use threegui::{Painter3D, Vec3};
 
-use crate::{common::espace, sim::Sim};
+use crate::{common::{espace, espacet}, sim::Sim};
 
 pub struct WireEditor3D {
 
@@ -22,7 +22,7 @@ fn find_closest_grid_point_screenspace(width: usize, paint: &Painter3D, screen_p
     for i in 0..width {
         for j in 0..width {
             for k in 0..width {
-                if let Some(pt_pos) = paint.transform(Vec3::new(i as f32, j as f32, k as f32)) {
+                if let Some(pt_pos) = paint.transform(espacet(width, (i, j, k))) {
                     let dist_sq = pt_pos.distance_sq(screen_pos);
                     if dist_sq < closest_dist {
                         closest_dist = dist_sq;
@@ -42,10 +42,10 @@ impl WireEditor3D {
 
         let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else { return; };
 
-        let Some((x, y, z)) = find_closest_grid_point_screenspace(width, paint, cursor_pos) else { return dbg!(()); };
+        let Some(pos) = find_closest_grid_point_screenspace(width, paint, cursor_pos) else { return; };
 
         paint.circle(
-            espace(width, Vec3::new(x as f32, y as f32, z as f32)),
+            espacet(width, pos),
             10.0,
             (1.0, Color32::GREEN),
         );
