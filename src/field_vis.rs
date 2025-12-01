@@ -125,11 +125,7 @@ fn draw_minimal_grid(paint: &Painter3D, width: usize, color: Color32) {
     for i in 0..width {
         for j in 0..width {
             for k in 0..width {
-                paint.circle_filled(
-                    espacet(width, (i, j, k)),
-                    1.0,
-                    color,
-                );
+                paint.circle_filled(espacet(width, (i, j, k)), 1.0, color);
             }
         }
     }

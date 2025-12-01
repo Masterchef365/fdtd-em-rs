@@ -4,7 +4,7 @@ use egui::{Color32, DragValue, Pos2, Stroke, Ui, Vec2};
 use threegui::{Painter3D, ThreeUi, Vec3};
 
 use crate::{
-    common::{espacet, IntPos3},
+    common::{IntPos3, espacet},
     sim::Sim,
 };
 
@@ -106,16 +106,16 @@ impl WireEditor3D {
             return;
         };
 
-
         //let Some((wire_id, wire_dist)) =
-        let closest_wire = 
-            find_closest_wire_screenspace(width, wiring, paint, cursor_pos);
+        let closest_wire = find_closest_wire_screenspace(width, wiring, paint, cursor_pos);
 
         let cursor_circle_size = 10.0;
 
         let cursor_color = Color32::GREEN;
 
-        if let Some((wire_id, wire_dist)) = closest_wire && wire_dist < cursor_grid_dist {
+        if let Some((wire_id, wire_dist)) = closest_wire
+            && wire_dist < cursor_grid_dist
+        {
             let stroke = Stroke::new(1.0, cursor_color);
             let (a, b) = wire_id;
             paint.line(espacet(width, a), espacet(width, b), stroke);
@@ -140,27 +140,19 @@ impl WireEditor3D {
             }
         }
 
-
-        let selection_stroke = 
-                Stroke::new(1.0, Color32::YELLOW);
+        let selection_stroke = Stroke::new(1.0, Color32::YELLOW);
 
         if let Some(selection) = self.sel_pos {
             match selection {
                 Selection::Position(pos) => {
-                    paint.circle(
-                        espacet(width, pos),
-                        cursor_circle_size,
-                        selection_stroke,
-                    );
-                },
+                    paint.circle(espacet(width, pos), cursor_circle_size, selection_stroke);
+                }
                 Selection::WireId(wire_id) => {
                     let (a, b) = wire_id;
                     paint.line(espacet(width, a), espacet(width, b), selection_stroke);
                 }
             }
         }
-
-        
     }
 
     pub fn show_ui(&mut self, ui: &mut Ui, width: usize, wiring: &mut Wiring3D) {
@@ -169,9 +161,9 @@ impl WireEditor3D {
         if ui.button("Add wire").clicked() {
             if let Some(Selection::Position(pos @ (x, y, z))) = self.sel_pos {
                 let b = if z + 1 < width {
-                    (x, y, z+1)
+                    (x, y, z + 1)
                 } else {
-                    (x, y, z-1)
+                    (x, y, z - 1)
                 };
 
                 let line = (pos, b);
@@ -197,21 +189,26 @@ impl WireEditor3D {
     }
 
     fn line_to_selection(&mut self, start: IntPos3, wiring: &mut Wiring3D, wire: Wire) {
-        let Some(Selection::Position(end)) = self.sel_pos else { return; };
+        let Some(Selection::Position(end)) = self.sel_pos else {
+            return;
+        };
 
         let (sx, sy, sz) = start;
         let (ex, ey, ez) = end;
 
-        for x in sx.min(ex)..sx.max(ex) {
-            wiring.insert(((x, sy, sz), (x + 1, sy, sz)), wire);
+        let (min_x, min_y, min_z) = (sx.min(ex), sy.min(ey), sz.min(ez));
+        let (max_x, max_y, max_z) = (sx.max(ex), sy.max(ey), sz.max(ez));
+
+        for x in min_x..max_x {
+            wiring.insert(((x, min_y, min_z), (x + 1, min_y, min_z)), wire);
         }
 
-        for y in sy.min(ey)..sy.max(ey) {
-            wiring.insert(((ex, y, sz), (ex, y, sz)), wire);
+        for y in min_y..max_y {
+            wiring.insert(((max_x, y, min_z), (max_x, y + 1, min_z)), wire);
         }
 
-        for z in sz.min(ez)..sz.max(ez) {
-            wiring.insert(((ex, ey, z), (ex, ey, z)), wire);
+        for z in min_z..max_z {
+            wiring.insert(((max_x, max_y, z), (max_x, max_y, z + 1)), wire);
         }
     }
 }

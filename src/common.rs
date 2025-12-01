@@ -61,7 +61,6 @@ pub fn espacet(width: usize, (x, y, z): IntPos3) -> Vec3 {
     espace(width, Vec3::new(x as f32, y as f32, z as f32))
 }
 
-
 /*
 pub fn espace_inv(width: usize, v: Vec3) -> Vec3 {
     v + Vec3::splat(width as f32 / 2.)

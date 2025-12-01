@@ -4,7 +4,8 @@ use ndarray::Array4;
 use crate::{
     field_vis::GridVisualizationConfig,
     sim::{Sim, SimConfig},
-    streamers::{Streamers, StreamersMode}, wire_editor_3d::{WireEditor3D, Wiring3D},
+    streamers::{Streamers, StreamersMode},
+    wire_editor_3d::{WireEditor3D, Wiring3D},
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -148,7 +149,8 @@ impl eframe::App for TemplateApp {
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
         SidePanel::left("left panel").show(ctx, |ui| {
-            self.wire_editor_3d.show_ui(ui, self.sim.width(), &mut self.wires);
+            self.wire_editor_3d
+                .show_ui(ui, self.sim.width(), &mut self.wires);
 
             ui.strong("Background grid");
             ui.checkbox(&mut self.grid_vis.show_grid, "Show grid");
@@ -228,7 +230,8 @@ impl eframe::App for TemplateApp {
 
                         self.grid_vis.draw(&self.sim, paint);
 
-                        self.wire_editor_3d.draw(self.sim.width(), thr, &mut self.wires);
+                        self.wire_editor_3d
+                            .draw(self.sim.width(), thr, &mut self.wires);
                     });
             });
         });

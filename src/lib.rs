@@ -2,8 +2,8 @@
 
 mod app;
 pub use app::TemplateApp;
-pub mod sim;
 pub mod common;
 pub mod field_vis;
+pub mod sim;
 pub mod streamers;
 pub mod wire_editor_3d;
