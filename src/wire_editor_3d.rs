@@ -197,13 +197,30 @@ impl WireEditor3D {
         ui.label("A quicker way is to select a point, then hold shift and select another.");
         ui.separator();
 
-        ui.strong("Editing wire");
         if let Some(Selection::WireId(wire_id)) = self.sel_pos {
+            ui.strong("Editing wire");
             if let Some(wire) = wiring.wires.get_mut(&wire_id) {
                 wire.show_ui(ui);
                 if ui.button("Delete").clicked() {
                     wiring.wires.remove(&wire_id);
                     self.sel_pos = None;
+                }
+            }
+        }
+
+        if let Some(Selection::Position(pos)) = self.sel_pos {
+            ui.strong("Editing node");
+            if let Some(port) = wiring.ports.get_mut(&pos) {
+                ui.horizontal(|ui| {
+                    ui.label("Port: ");
+                    ui.text_edit_singleline(&mut port.0);
+                });
+                if ui.button("Delete").clicked() {
+                    wiring.ports.remove(&pos);
+                }
+            } else {
+                if ui.button("Add port").clicked() {
+                    wiring.ports.insert(pos, Port("New port".into()));
                 }
             }
         }
@@ -235,7 +252,7 @@ impl WireEditor3D {
 }
 
 impl Wiring3D {
-    pub fn insert(&mut self, pos: (IntPos3, IntPos3), wire: Wire) -> Option<Wire> {
+    pub fn insert(&mut self, pos: WireId, wire: Wire) -> Option<Wire> {
         self.wires.insert(pos, wire)
     }
 
@@ -257,9 +274,18 @@ impl Wiring3D {
     }
 
     pub fn draw(&self, width: usize, paint: &Painter3D) {
+        // Draw lines
         let stroke = Stroke::new(1.0, Color32::GRAY);
         for (a, b) in self.wires.keys() {
             paint.line(espacet(width, *a), espacet(width, *b), stroke);
+        }
+
+        // Draw ports
+        for (pos, port) in &self.ports {
+            let color = Color32::ORANGE;
+            let pos = espacet(width, *pos);
+            paint.circle(pos, 7.0, Stroke::new(1.0, color));
+            paint.text(pos, egui::Align2::RIGHT_TOP, &port.0, Default::default(), color);
         }
     }
 }
