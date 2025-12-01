@@ -2,10 +2,7 @@ use egui::{DragValue, SidePanel};
 use ndarray::Array4;
 
 use crate::{
-    field_vis::GridVisualizationConfig,
-    sim::{Sim, SimConfig},
-    streamers::{Streamers, StreamersMode},
-    wire_editor_3d::{WireEditor3D, Wiring3D},
+    circuit::CircuitApp, field_vis::GridVisualizationConfig, sim::{Sim, SimConfig}, streamers::{Streamers, StreamersMode}, wire_editor_3d::{WireEditor3D, Wiring3D}
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -28,6 +25,8 @@ pub struct TemplateApp {
     wires: Wiring3D,
 
     magnetization: Array4<f32>,
+
+    circuit: CircuitApp,
 }
 
 fn random_sim(width: usize) -> (Sim, Array4<f32>) {
@@ -38,6 +37,7 @@ fn random_sim(width: usize) -> (Sim, Array4<f32>) {
 
     let mut magnetization = Array4::zeros(sim.h_field.dim());
 
+    /*
     let c = width / 2;
 
     for i in c - 1..=c + 1 {
@@ -49,6 +49,7 @@ fn random_sim(width: usize) -> (Sim, Array4<f32>) {
             }
         }
     }
+    */
 
     /*
     sim.e_field
@@ -74,6 +75,7 @@ impl Default for TemplateApp {
     fn default() -> Self {
         let (sim, magnetization) = random_sim(10);
         Self {
+            circuit: Default::default(),
             wire_editor_3d: WireEditor3D::default(),
 
             magnetization,
@@ -130,7 +132,7 @@ impl eframe::App for TemplateApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if !self.pause {
             ctx.request_repaint();
-            self.sim.step(&self.sim_cfg, &self.magnetization);
+            self.sim.step(&self.sim_cfg, &self.magnetization, &self.magnetization);
             let width = self.sim.width();
             self.time += self.sim_cfg.dt;
 
@@ -208,11 +210,14 @@ impl eframe::App for TemplateApp {
             );
 
             if ui.button("Step").clicked() {
-                self.sim.step(&self.sim_cfg, &self.magnetization);
+                self.sim.step(&self.sim_cfg, &self.magnetization, &self.magnetization);
             }
+
+            self.circuit.show_config(ui);
         });
 
         SidePanel::right("right panel").show(ctx, |ui| {
+            self.circuit.update(ui, false, false);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {

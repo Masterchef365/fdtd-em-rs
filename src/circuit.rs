@@ -54,7 +54,7 @@ impl Default for CircuitApp {
 }
 
 impl CircuitApp {
-    fn state(&self) -> Option<DiagramState> {
+    pub fn state(&self) -> Option<DiagramState> {
         self.sim.as_ref().map(|sim| {
             let diag = self.current_file.diagram.to_primitive_diagram();
             DiagramState::new(&sim.state(&diag), &diag)
@@ -63,7 +63,7 @@ impl CircuitApp {
 }
 
 impl CircuitApp {
-    fn show_config(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) -> (bool, bool) {
+    pub fn show_config(&mut self, ui: &mut egui::Ui) -> (bool, bool) {
         let mut rebuild_sim = self.sim.is_none();
 
         // TODO: Cache this?
@@ -286,8 +286,12 @@ impl CircuitApp {
         (rebuild_sim, single_step)
     }
 
-    fn update(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame, mut rebuild_sim: bool, single_step: bool) {
+    pub fn update(&mut self, ui: &mut egui::Ui, mut rebuild_sim: bool, single_step: bool) {
         let state = self.state();
+
+        if ui.button("Reset camera").clicked() {
+            self.view_rect = Rect::ZERO;
+        }
 
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             let rect = self.view_rect;
