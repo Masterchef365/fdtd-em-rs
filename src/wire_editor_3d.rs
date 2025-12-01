@@ -8,10 +8,13 @@ use crate::{
     sim::Sim,
 };
 
+#[derive(Clone, Copy)]
 pub struct Wire {
     /// Ohms
     resistance: f32,
 }
+
+const DEFAULT_WIRE: Wire = Wire { resistance: 1e-3 };
 
 pub struct Port(String);
 
@@ -119,7 +122,6 @@ impl WireEditor3D {
 
             if thr.resp.clicked() {
                 self.sel_pos = Some(Selection::WireId(wire_id));
-                return;
             }
         } else {
             paint.circle(
@@ -129,6 +131,10 @@ impl WireEditor3D {
             );
 
             if thr.resp.clicked() {
+                if thr.resp.ctx.input(|r| r.modifiers.shift_only()) {
+                    self.line_to_selection(cursor_pos_3d, wiring, DEFAULT_WIRE);
+                }
+
                 self.sel_pos = Some(Selection::Position(cursor_pos_3d));
                 return;
             }
@@ -169,10 +175,11 @@ impl WireEditor3D {
                 };
 
                 let line = (pos, b);
-                wiring.insert(line, Wire { resistance: 1e-3 });
+                wiring.insert(line, DEFAULT_WIRE);
                 self.sel_pos = Some(Selection::WireId(line));
             }
         }
+        ui.label("A quicker way is to select a point, then hold shift and select another.");
         ui.separator();
 
         ui.strong("Editing wire");
@@ -187,6 +194,25 @@ impl WireEditor3D {
         }
 
         ui.separator();
+    }
+
+    fn line_to_selection(&mut self, start: IntPos3, wiring: &mut Wiring3D, wire: Wire) {
+        let Some(Selection::Position(end)) = self.sel_pos else { return; };
+
+        let (sx, sy, sz) = start;
+        let (ex, ey, ez) = end;
+
+        for x in sx.min(ex)..sx.max(ex) {
+            wiring.insert(((x, sy, sz), (x + 1, sy, sz)), wire);
+        }
+
+        for y in sy.min(ey)..sy.max(ey) {
+            wiring.insert(((ex, y, sz), (ex, y, sz)), wire);
+        }
+
+        for z in sz.min(ez)..sz.max(ez) {
+            wiring.insert(((ex, ey, z), (ex, ey, z)), wire);
+        }
     }
 }
 
