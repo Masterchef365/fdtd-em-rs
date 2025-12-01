@@ -77,7 +77,7 @@ impl Default for TemplateApp {
 
             magnetization,
             streamers: Streamers::new(&sim, 5000),
-            enable_streamers: StreamersMode::HField,
+            enable_streamers: StreamersMode::Off,
             time: 0.,
             streamer_step: 0.01,
 

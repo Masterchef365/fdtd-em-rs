@@ -29,8 +29,8 @@ impl Default for GridVisualizationConfig {
             show_e_grid: false,
             show_h_grid: false,
 
-            show_e_vect: true,
-            show_h_vect: true,
+            show_e_vect: false,
+            show_h_vect: false,
 
             show_e_mag: false,
             show_h_mag: false,

@@ -161,10 +161,17 @@ impl WireEditor3D {
         ui.strong("Wires");
 
         if ui.button("Add wire").clicked() {
-            let w = width / 2;
-            let pos = ((w, w, w), (w, w, w+1));
-            wiring.insert(pos, Wire { resistance: 1e-3 });
-            self.sel_pos = Some(Selection::WireId(pos));
+            if let Some(Selection::Position(pos @ (x, y, z))) = self.sel_pos {
+                let b = if z + 1 < width {
+                    (x, y, z+1)
+                } else {
+                    (x, y, z-1)
+                };
+
+                let line = (pos, b);
+                wiring.insert(line, Wire { resistance: 1e-3 });
+                self.sel_pos = Some(Selection::WireId(line));
+            }
         }
         ui.separator();
 
@@ -172,6 +179,10 @@ impl WireEditor3D {
         if let Some(Selection::WireId(wire_id)) = self.sel_pos {
             if let Some(wire) = wiring.wires.get_mut(&wire_id) {
                 wire.show_ui(ui);
+                if ui.button("Delete").clicked() {
+                    wiring.wires.remove(&wire_id);
+                    self.sel_pos = None;
+                }
             }
         }
 
