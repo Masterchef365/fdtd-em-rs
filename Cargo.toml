@@ -24,8 +24,8 @@ log = "0.4"
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
 ndarray = "0.16.1"
-threegui = { git = "https://github.com/Masterchef365/threegui.git", rev = "a904982" }
-#threegui = { path = "../threegui" }
+#threegui = { git = "https://github.com/Masterchef365/threegui.git", rev = "a904982" }
+threegui = { path = "../threegui" }
 rand = { version = "0.8", features = ["small_rng"] }
 getrandom = { version = "*", features = ["js"] }
 

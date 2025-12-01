@@ -27,6 +27,7 @@ pub struct WireEditor3D {
     sel_pos: Option<Selection>,
 }
 
+#[derive(Clone, Copy)]
 enum Selection {
     Position(IntPos3),
     WireId((IntPos3, IntPos3)),
@@ -115,42 +116,72 @@ impl WireEditor3D {
             let stroke = Stroke::new(1.0, cursor_color);
             let (a, b) = wire_id;
             paint.line(espacet(width, a), espacet(width, b), stroke);
+
+            if thr.resp.clicked() {
+                self.sel_pos = Some(Selection::WireId(wire_id));
+                return;
+            }
         } else {
             paint.circle(
                 espacet(width, cursor_pos_3d),
                 cursor_circle_size,
                 (1.0, cursor_color),
             );
+
+            if thr.resp.clicked() {
+                self.sel_pos = Some(Selection::Position(cursor_pos_3d));
+                return;
+            }
         }
 
-        /*
-        if let Some(Selection::Position(pos)) = self.sel_pos {
-            paint.circle(
-                espacet(width, pos),
-                cursor_circle_size,
-                (1.0, Color32::YELLOW),
-            );
+
+        let selection_stroke = 
+                Stroke::new(1.0, Color32::YELLOW);
+
+        if let Some(selection) = self.sel_pos {
+            match selection {
+                Selection::Position(pos) => {
+                    paint.circle(
+                        espacet(width, pos),
+                        cursor_circle_size,
+                        selection_stroke,
+                    );
+                },
+                Selection::WireId(wire_id) => {
+                    let (a, b) = wire_id;
+                    paint.line(espacet(width, a), espacet(width, b), selection_stroke);
+                }
+            }
         }
 
-        if cursor_grid_dist < cursor_circle_size && thr.resp.clicked() {
-            self.sel_pos = Some(Selection::Position(cursor_pos_3d));
-            return;
-        }
-        */
+        
     }
 
-    pub fn show_ui(&mut self, ui: &mut Ui, wiring: &mut Wiring3D) {
+    pub fn show_ui(&mut self, ui: &mut Ui, width: usize, wiring: &mut Wiring3D) {
+        ui.strong("Wires");
+
+        if ui.button("Add wire").clicked() {
+            let w = width / 2;
+            let pos = ((w, w, w), (w, w, w+1));
+            wiring.insert(pos, Wire { resistance: 1e-3 });
+            self.sel_pos = Some(Selection::WireId(pos));
+        }
+        ui.separator();
+
+        ui.strong("Editing wire");
         if let Some(Selection::WireId(wire_id)) = self.sel_pos {
             if let Some(wire) = wiring.wires.get_mut(&wire_id) {
                 wire.show_ui(ui);
             }
         }
+
+        ui.separator();
     }
 }
 
 impl Wiring3D {
-    pub fn insert(&mut self, a: IntPos3, b: IntPos3, wire: Wire) -> Option<Wire> {
-        self.wires.insert((a, b), wire)
+    pub fn insert(&mut self, pos: (IntPos3, IntPos3), wire: Wire) -> Option<Wire> {
+        self.wires.insert(pos, wire)
     }
 
     pub fn get(&self, wire_id @ (a, b): WireId) -> Option<&Wire> {
