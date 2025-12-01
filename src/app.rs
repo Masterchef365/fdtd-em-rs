@@ -150,6 +150,7 @@ impl eframe::App for TemplateApp {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
+        let (mut rebuild_sim, mut single_step) = (false, false);
         SidePanel::left("left panel").show(ctx, |ui| {
             self.wire_editor_3d
                 .show_ui(ui, self.sim.width(), &mut self.wires);
@@ -213,11 +214,11 @@ impl eframe::App for TemplateApp {
                 self.sim.step(&self.sim_cfg, &self.magnetization, &self.magnetization);
             }
 
-            self.circuit.show_config(ui);
+            (rebuild_sim, single_step) = self.circuit.show_config(ui);
         });
 
         SidePanel::right("right panel").show(ctx, |ui| {
-            self.circuit.update(ui, false, false);
+            self.circuit.update(ui, rebuild_sim, single_step);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
