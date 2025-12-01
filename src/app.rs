@@ -212,6 +212,9 @@ impl eframe::App for TemplateApp {
             }
         });
 
+        SidePanel::right("right panel").show(ctx, |ui| {
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 threegui::ThreeWidget::new("E&M torture")

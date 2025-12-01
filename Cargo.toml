@@ -28,6 +28,7 @@ ndarray = "0.16.1"
 threegui = { path = "../threegui" }
 rand = { version = "0.8", features = ["small_rng"] }
 getrandom = { version = "*", features = ["js"] }
+cirmcut = { path = "../cirmcut" }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
