@@ -14,7 +14,6 @@ pub struct TemplateApp {
     time: f32,
 
     new_width: usize,
-    pause: bool,
 
     grid_vis: GridVisualizationConfig,
     streamers: Streamers,
@@ -84,7 +83,6 @@ impl Default for TemplateApp {
             time: 0.,
             streamer_step: 0.01,
 
-            pause: false,
             new_width: sim.width(),
 
             grid_vis: GridVisualizationConfig::default(),
@@ -130,7 +128,7 @@ impl eframe::App for TemplateApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if !self.pause {
+        if !self.circuit.paused {
             ctx.request_repaint();
             self.sim.step(&self.sim_cfg, &self.magnetization, &self.magnetization);
             let width = self.sim.width();
@@ -175,11 +173,7 @@ impl eframe::App for TemplateApp {
             });
 
             ui.separator();
-            ui.strong("State control");
-            ui.checkbox(&mut self.pause, "Paused");
-
-            ui.separator();
-            ui.strong("Sim settings");
+            ui.strong("FDTD settings");
             ui.horizontal(|ui| {
                 ui.add(DragValue::new(&mut self.new_width).prefix("Width: "));
                 if ui.button("Reset").clicked() {

@@ -15,19 +15,19 @@ use cirmcut::circuit_widget::{
 };
 
 pub struct CircuitApp {
-    view_rect: Rect,
-    editor: DiagramEditor,
-    debug_draw: bool,
-    current_path: Option<PathBuf>,
+    pub view_rect: Rect,
+    pub editor: DiagramEditor,
+    pub debug_draw: bool,
+    pub current_path: Option<PathBuf>,
 
-    current_file: CircuitFile,
-    vis_opt: VisualizationOptions,
+    pub current_file: CircuitFile,
+    pub vis_opt: VisualizationOptions,
 
-    sim: Option<Solver>,
+    pub sim: Option<Solver>,
 
-    error: Option<String>,
+    pub error: Option<String>,
 
-    paused: bool,
+    pub paused: bool,
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -67,7 +67,7 @@ impl CircuitApp {
         let mut rebuild_sim = self.sim.is_none();
 
         ScrollArea::vertical().show(ui, |ui| {
-            ui.strong("Simulation");
+            ui.strong("Circuit Simulation");
             let text = if self.paused { "Run" } else { "Pause" };
             ui.horizontal(|ui| {
                 if ui.button(text).clicked() {
