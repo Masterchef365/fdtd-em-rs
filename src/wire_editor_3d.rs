@@ -136,8 +136,8 @@ impl WireEditor3D {
 
             if thr.resp.clicked() {
                 if thr.resp.ctx.input(|r| r.modifiers.shift) {
-                    self.line_to_selection(cursor_pos_3d, wiring, DEFAULT_WIRE);
                     self.undo = Some(wiring.clone());
+                    self.line_to_selection(cursor_pos_3d, wiring, DEFAULT_WIRE);
                 }
 
                 self.sel_pos = Some(Selection::Position(cursor_pos_3d));
@@ -149,6 +149,16 @@ impl WireEditor3D {
         if thr.resp.ctx.input(|r| r.modifiers.ctrl && r.key_released(egui::Key::Z)) {
             if let Some(state) = self.undo.take() {
                 *wiring = state;
+                eprintln!("UNDO");
+            }
+        }
+
+        // Delete
+        if thr.resp.ctx.input(|r| r.key_released(egui::Key::Delete)) {
+            if let Some(Selection::WireId(wire_id)) = self.sel_pos {
+                self.undo = Some(wiring.clone());
+                wiring.wires.remove(&wire_id);
+                self.sel_pos = None;
             }
         }
 
