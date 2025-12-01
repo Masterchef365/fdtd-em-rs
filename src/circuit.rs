@@ -63,7 +63,7 @@ impl CircuitApp {
 }
 
 impl CircuitApp {
-    pub fn show_config(&mut self, ui: &mut egui::Ui) -> (bool, bool) {
+    pub fn show_config(&mut self, ui: &mut egui::Ui) -> (bool, bool, Option<DiagramState>) {
         let mut rebuild_sim = self.sim.is_none();
 
         // TODO: Cache this?
@@ -283,12 +283,10 @@ impl CircuitApp {
             });
         });
 
-        (rebuild_sim, single_step)
+        (rebuild_sim, single_step, state)
     }
 
-    pub fn update(&mut self, ui: &mut egui::Ui, mut rebuild_sim: bool, single_step: bool) {
-        let state = self.state();
-
+    pub fn update(&mut self, ui: &mut egui::Ui, mut rebuild_sim: bool, single_step: bool, state: Option<DiagramState>) {
         if ui.button("Reset camera").clicked() {
             self.view_rect = Rect::ZERO;
         }
@@ -297,11 +295,11 @@ impl CircuitApp {
             let rect = self.view_rect;
             let resp = egui::Scene::new().show(ui, &mut self.view_rect, |ui| {
                 draw_grid(ui, rect, 1.0, Color32::DARK_GRAY);
-                if let Some(state) = state {
+                if let Some(state) = &state {
                     rebuild_sim |= self.editor.edit(
                         ui,
                         &mut self.current_file.diagram,
-                        &state,
+                        state,
                         self.debug_draw,
                         &self.vis_opt,
                     );
@@ -321,7 +319,7 @@ impl CircuitApp {
         // Reset
         if rebuild_sim {
             self.sim = Some(Solver::new(
-                    &self.current_file.diagram.to_primitive_diagram(),
+                &self.current_file.diagram.to_primitive_diagram(),
             ));
         }
 
