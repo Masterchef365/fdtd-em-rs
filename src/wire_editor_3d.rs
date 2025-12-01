@@ -16,11 +16,12 @@ pub struct Wire {
 
 const DEFAULT_WIRE: Wire = Wire { resistance: 1e-3 };
 
-pub struct Port(String);
+#[derive(Clone)]
+pub struct Port(pub String);
 
 pub type WireId = (IntPos3, IntPos3);
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Wiring3D {
     pub wires: HashMap<WireId, Wire>,
     pub ports: HashMap<IntPos3, Port>,
@@ -28,6 +29,7 @@ pub struct Wiring3D {
 
 pub struct WireEditor3D {
     sel_pos: Option<Selection>,
+    undo: Option<Wiring3D>,
 }
 
 #[derive(Clone, Copy)]
@@ -38,7 +40,7 @@ enum Selection {
 
 impl Default for WireEditor3D {
     fn default() -> Self {
-        Self { sel_pos: None }
+        Self { sel_pos: None, undo: None }
     }
 }
 
@@ -106,13 +108,14 @@ impl WireEditor3D {
             return;
         };
 
-        //let Some((wire_id, wire_dist)) =
+        // Finding the nearest wire
         let closest_wire = find_closest_wire_screenspace(width, wiring, paint, cursor_pos);
 
         let cursor_circle_size = 10.0;
 
         let cursor_color = Color32::GREEN;
 
+        // If the wire is closer...
         if let Some((wire_id, wire_dist)) = closest_wire
             && wire_dist < cursor_grid_dist
         {
@@ -124,6 +127,7 @@ impl WireEditor3D {
                 self.sel_pos = Some(Selection::WireId(wire_id));
             }
         } else {
+            // If the grid is closer...
             paint.circle(
                 espacet(width, cursor_pos_3d),
                 cursor_circle_size,
@@ -131,8 +135,9 @@ impl WireEditor3D {
             );
 
             if thr.resp.clicked() {
-                if thr.resp.ctx.input(|r| r.modifiers.shift_only()) {
+                if thr.resp.ctx.input(|r| r.modifiers.shift) {
                     self.line_to_selection(cursor_pos_3d, wiring, DEFAULT_WIRE);
+                    self.undo = Some(wiring.clone());
                 }
 
                 self.sel_pos = Some(Selection::Position(cursor_pos_3d));
@@ -140,6 +145,14 @@ impl WireEditor3D {
             }
         }
 
+        // Undo
+        if thr.resp.ctx.input(|r| r.modifiers.ctrl && r.key_released(egui::Key::U)) {
+            if let Some(state) = self.undo.take() {
+                *wiring = state;
+            }
+        }
+
+        // Draw selection
         let selection_stroke = Stroke::new(1.0, Color32::YELLOW);
 
         if let Some(selection) = self.sel_pos {
@@ -196,20 +209,42 @@ impl WireEditor3D {
         let (sx, sy, sz) = start;
         let (ex, ey, ez) = end;
 
-        let (min_x, min_y, min_z) = (sx.min(ex), sy.min(ey), sz.min(ez));
-        let (max_x, max_y, max_z) = (sx.max(ex), sy.max(ey), sz.max(ez));
-
-        for x in min_x..max_x {
-            wiring.insert(((x, min_y, min_z), (x + 1, min_y, min_z)), wire);
+        if sx < ex {
+            for x in sx..ex {
+                wiring.insert(((x, sy, sz), (x + 1, sy, sz)), wire);
+            }
+        } else {
+            for x in ex..sx {
+                wiring.insert(((x, sy, sz), (x - 1, sy, sz)), wire);
+            }
         }
 
-        for y in min_y..max_y {
-            wiring.insert(((max_x, y, min_z), (max_x, y + 1, min_z)), wire);
+        if sy < ey {
+            for y in sy..ey {
+                wiring.insert(((ex, y, sz), (ex, y + 1, sz)), wire);
+            }
+        } else {
+            for y in ey..sy {
+                wiring.insert(((ex, y, sz), (ex, y - 1, sz)), wire);
+            }
         }
 
-        for z in min_z..max_z {
-            wiring.insert(((max_x, max_y, z), (max_x, max_y, z + 1)), wire);
+        if sz < ez {
+            for z in sz..ez {
+                wiring.insert(((ex, ey, z), (ex, ey, z + 1)), wire);
+            }
+        } else {
+            for z in ez..sz {
+                wiring.insert(((ex, ey, z), (ex, ey, z - 1)), wire);
+            }
         }
+
+
+
+
+
+
+        
     }
 }
 
