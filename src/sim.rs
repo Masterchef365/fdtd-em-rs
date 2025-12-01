@@ -1,12 +1,12 @@
 use ndarray::Array4;
 
-pub struct Sim {
+pub struct FdtdSim {
     pub e_field: Array4<f32>,
     pub h_field: Array4<f32>,
     width: usize,
 }
 
-impl Sim {
+impl FdtdSim {
     pub fn new(width: usize) -> Self {
         let e_field = Array4::zeros((width, width, width, 3));
         let h_field = Array4::zeros((width, width, width, 3));
@@ -29,7 +29,7 @@ impl Sim {
         self.width
     }
 
-    pub fn step(&mut self, cfg: &SimConfig, magnetization: &Array4<f32>, external_elec: &Array4<f32>) {
+    pub fn step(&mut self, cfg: &FdtdSimConfig, magnetization: &Array4<f32>, external_elec: &Array4<f32>) {
         half_step(
             &mut self.e_field,
             &(&self.h_field + magnetization),
@@ -65,7 +65,7 @@ impl Sim {
     }
 }
 
-pub struct SimConfig {
+pub struct FdtdSimConfig {
     /// Spacial step (meters)
     pub dx: f32,
     /// Time step (seconds)
@@ -76,7 +76,7 @@ pub struct SimConfig {
     pub eps: f32,
 }
 
-impl SimConfig {
+impl FdtdSimConfig {
     pub fn scaling(&self) -> f32 {
         self.dt / self.dx / (self.mu * self.eps).sqrt()
     }

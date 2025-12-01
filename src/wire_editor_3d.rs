@@ -5,7 +5,7 @@ use threegui::{Painter3D, ThreeUi, Vec3};
 
 use crate::{
     common::{IntPos3, espacet},
-    sim::Sim,
+    sim::FdtdSim,
 };
 
 #[derive(Clone, Copy)]
@@ -91,7 +91,8 @@ fn find_closest_wire_screenspace(
 }
 
 impl WireEditor3D {
-    pub fn draw(&mut self, width: usize, thr: &ThreeUi, wiring: &mut Wiring3D) {
+    /// Returns true if the edit was destructive
+    pub fn draw(&mut self, width: usize, thr: &ThreeUi, wiring: &mut Wiring3D) -> bool {
         let paint = thr.painter();
 
         // Draw wiring
@@ -99,13 +100,13 @@ impl WireEditor3D {
 
         // Projecting the cursor
         let Some(cursor_pos) = paint.egui().ctx().input(|r| r.pointer.latest_pos()) else {
-            return;
+            return false;
         };
 
         let Some((cursor_pos_3d, cursor_grid_dist)) =
             find_closest_grid_point_screenspace(width, paint, cursor_pos)
         else {
-            return;
+            return false;
         };
 
         // Finding the nearest wire
@@ -138,10 +139,12 @@ impl WireEditor3D {
                 if thr.resp.ctx.input(|r| r.modifiers.shift) {
                     self.undo = Some(wiring.clone());
                     self.line_to_selection(cursor_pos_3d, wiring, DEFAULT_WIRE);
+                    self.sel_pos = Some(Selection::Position(cursor_pos_3d));
+                    return true;
+                } else {
+                    self.sel_pos = Some(Selection::Position(cursor_pos_3d));
+                    return false;
                 }
-
-                self.sel_pos = Some(Selection::Position(cursor_pos_3d));
-                return;
             }
         }
 
@@ -149,7 +152,7 @@ impl WireEditor3D {
         if thr.resp.ctx.input(|r| r.modifiers.ctrl && r.key_released(egui::Key::Z)) {
             if let Some(state) = self.undo.take() {
                 *wiring = state;
-                eprintln!("UNDO");
+                return true;
             }
         }
 
@@ -159,6 +162,7 @@ impl WireEditor3D {
                 self.undo = Some(wiring.clone());
                 wiring.wires.remove(&wire_id);
                 self.sel_pos = None;
+                return true;
             }
         }
 
@@ -176,6 +180,8 @@ impl WireEditor3D {
                 }
             }
         }
+
+        return false;
     }
 
     pub fn show_ui(&mut self, ui: &mut Ui, width: usize, wiring: &mut Wiring3D) {

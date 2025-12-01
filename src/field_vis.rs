@@ -4,7 +4,7 @@ use threegui::{Painter3D, Vec3};
 
 use crate::{
     common::{espace, espacet, screenspace_arrow},
-    sim::Sim,
+    sim::FdtdSim,
 };
 
 pub struct GridVisualizationConfig {
@@ -65,7 +65,7 @@ impl GridVisualizationConfig {
         );
     }
 
-    pub fn draw(&self, sim: &Sim, paint: &Painter3D) {
+    pub fn draw(&self, sim: &FdtdSim, paint: &Painter3D) {
         if self.show_grid {
             draw_grid(paint, sim.width(), Stroke::new(1., Color32::from_gray(36)));
         }
@@ -131,11 +131,11 @@ fn draw_minimal_grid(paint: &Painter3D, width: usize, color: Color32) {
     }
 }
 
-fn draw_efield_grid(paint: &Painter3D, sim: &Sim, stroke: Stroke, scale: f32) {
+fn draw_efield_grid(paint: &Painter3D, sim: &FdtdSim, stroke: Stroke, scale: f32) {
     draw_field_grid(paint, sim.e_field(), sim.width(), stroke, scale, 0.0);
 }
 
-fn draw_hfield_grid(paint: &Painter3D, sim: &Sim, stroke: Stroke, scale: f32) {
+fn draw_hfield_grid(paint: &Painter3D, sim: &FdtdSim, stroke: Stroke, scale: f32) {
     draw_field_grid(paint, sim.h_field(), sim.width(), stroke, scale, 0.5);
 }
 
@@ -164,11 +164,11 @@ fn draw_field_grid(
     }
 }
 
-fn draw_efield_vect(paint: &Painter3D, sim: &Sim, stroke: Stroke, scale: f32) {
+fn draw_efield_vect(paint: &Painter3D, sim: &FdtdSim, stroke: Stroke, scale: f32) {
     draw_field_vect(paint, sim.e_field(), sim.width(), stroke, scale);
 }
 
-fn draw_hfield_vect(paint: &Painter3D, sim: &Sim, stroke: Stroke, scale: f32) {
+fn draw_hfield_vect(paint: &Painter3D, sim: &FdtdSim, stroke: Stroke, scale: f32) {
     draw_field_vect(paint, sim.h_field(), sim.width(), stroke, scale);
 }
 
@@ -221,10 +221,10 @@ fn draw_field_magnitude(
     }
 }
 
-fn draw_efield_mag(paint: &Painter3D, sim: &Sim, color: Color32, scale: f32) {
+fn draw_efield_mag(paint: &Painter3D, sim: &FdtdSim, color: Color32, scale: f32) {
     draw_field_magnitude(paint, sim.e_field(), sim.width(), color, scale, 0.0);
 }
 
-fn draw_hfield_mag(paint: &Painter3D, sim: &Sim, color: Color32, scale: f32) {
+fn draw_hfield_mag(paint: &Painter3D, sim: &FdtdSim, color: Color32, scale: f32) {
     draw_field_magnitude(paint, sim.h_field(), sim.width(), color, scale, 0.5);
 }

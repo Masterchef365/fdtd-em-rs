@@ -13,6 +13,9 @@ use cirmcut::circuit_widget::{
     draw_grid, egui_to_cellpos, Diagram, DiagramEditor, DiagramState, DiagramWireState,
     VisualizationOptions,
 };
+use ndarray::Array4;
+
+use crate::{sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::Wiring3D};
 
 pub struct CircuitApp {
     pub view_rect: Rect,
@@ -279,7 +282,7 @@ impl CircuitApp {
         });
     }
 
-    pub fn update(&mut self, ui: &mut egui::Ui, mut rebuild_sim: bool, single_step: bool, state: Option<DiagramState>) {
+    pub fn update(&mut self, ui: &mut egui::Ui, rebuild_sim: &mut bool, single_step: &mut bool, state: &Option<DiagramState>) {
         if ui.button("Reset camera").clicked() {
             self.view_rect = Rect::ZERO;
         }
@@ -288,8 +291,8 @@ impl CircuitApp {
             let rect = self.view_rect;
             let resp = egui::Scene::new().show(ui, &mut self.view_rect, |ui| {
                 draw_grid(ui, rect, 1.0, Color32::DARK_GRAY);
-                if let Some(state) = &state {
-                    rebuild_sim |= self.editor.edit(
+                if let Some(state) = state {
+                    *rebuild_sim |= self.editor.edit(
                         ui,
                         &mut self.current_file.diagram,
                         state,
@@ -300,7 +303,7 @@ impl CircuitApp {
             });
 
             if ui.input(|r| r.key_pressed(Key::Delete)) {
-                rebuild_sim = true;
+                *rebuild_sim = true;
                 self.editor.delete(&mut self.current_file.diagram);
             }
 
@@ -308,7 +311,9 @@ impl CircuitApp {
                 self.editor.reset_selection();
             }
         });
+    }
 
+    pub fn step(&mut self, rebuild_sim: bool, single_step: bool, fdtd_sim: &mut FdtdSim, fdtd_cfg: &FdtdSimConfig, wires: &Wiring3D) {
         // Reset
         if rebuild_sim {
             self.sim = Some(Solver::new(
@@ -317,13 +322,22 @@ impl CircuitApp {
         }
 
         if !self.paused || rebuild_sim || single_step {
-            ui.ctx().request_repaint();
+            //ui.ctx().request_repaint();
 
-            if let Some(sim) = &mut self.sim {
+            if let Some(circuit_sim) = &mut self.sim {
                 //let start = std::time::Instant::now();
-                if let Err(e) = sim.step(
+
+                let primitive_diagram = self.current_file.diagram.to_primitive_diagram();
+
+
+                //let external_elec = 
+
+                let magnetization = Array4::<f32>::zeros(fdtd_sim.h_field.dim());
+                fdtd_sim.step(fdtd_cfg, &magnetization, &magnetization);
+
+                if let Err(e) = circuit_sim.step(
                     self.current_file.dt,
-                    &self.current_file.diagram.to_primitive_diagram(),
+                    &primitive_diagram,
                     &self.current_file.cfg,
                 ) {
                     eprintln!("{}", e);

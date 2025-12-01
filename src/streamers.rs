@@ -4,7 +4,7 @@ use threegui::{Painter3D, Vec3};
 
 use crate::{
     common::{espace, interp, screenspace_arrow},
-    sim::Sim,
+    sim::FdtdSim,
 };
 
 #[derive(Default, Clone, Copy, PartialEq, Eq)]
@@ -20,7 +20,7 @@ pub struct Streamers {
 }
 
 impl Streamers {
-    pub fn new(sim: &Sim, n: usize) -> Self {
+    pub fn new(sim: &FdtdSim, n: usize) -> Self {
         let mut rng = rand::thread_rng();
 
         Self {
@@ -28,7 +28,7 @@ impl Streamers {
         }
     }
 
-    fn random_pos(sim: &Sim, rng: &mut impl Rng) -> Vec3 {
+    fn random_pos(sim: &FdtdSim, rng: &mut impl Rng) -> Vec3 {
         Vec3::new(
             rng.gen_range(0.0..=sim.width() as f32 - 1.0),
             rng.gen_range(0.0..=sim.width() as f32 - 1.0),
@@ -38,7 +38,7 @@ impl Streamers {
 
     pub fn step(
         &mut self,
-        sim: &Sim,
+        sim: &FdtdSim,
         paint: &Painter3D,
         dt: f32,
         shimmer: f64,

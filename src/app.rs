@@ -2,15 +2,15 @@ use egui::{DragValue, SidePanel, TopBottomPanel};
 use ndarray::Array4;
 
 use crate::{
-    circuit::CircuitApp, field_vis::GridVisualizationConfig, sim::{Sim, SimConfig}, streamers::{Streamers, StreamersMode}, wire_editor_3d::{WireEditor3D, Wiring3D}
+    circuit::CircuitApp, field_vis::GridVisualizationConfig, sim::{FdtdSim, FdtdSimConfig}, streamers::{Streamers, StreamersMode}, wire_editor_3d::{WireEditor3D, Wiring3D}
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 //#[derive(serde::Deserialize, serde::Serialize)]
 //#[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    sim: Sim,
-    sim_cfg: SimConfig,
+    sim: FdtdSim,
+    sim_cfg: FdtdSimConfig,
     time: f32,
 
     new_width: usize,
@@ -28,8 +28,8 @@ pub struct TemplateApp {
     circuit: CircuitApp,
 }
 
-fn random_sim(width: usize) -> (Sim, Array4<f32>) {
-    let sim = Sim::new(width);
+fn random_sim(width: usize) -> (FdtdSim, Array4<f32>) {
+    let sim = FdtdSim::new(width);
 
     let unif = rand::distributions::Uniform::new(-1.0, 1.0);
     let rng = rand::thread_rng();
@@ -87,7 +87,7 @@ impl Default for TemplateApp {
 
             grid_vis: GridVisualizationConfig::default(),
 
-            sim_cfg: SimConfig {
+            sim_cfg: FdtdSimConfig {
                 dx: 1.,
                 dt: 0.005,
                 mu: 1.,
@@ -130,19 +130,7 @@ impl eframe::App for TemplateApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if !self.circuit.paused {
             ctx.request_repaint();
-            self.sim.step(&self.sim_cfg, &self.magnetization, &self.magnetization);
-            let width = self.sim.width();
             self.time += self.sim_cfg.dt;
-
-            let k = (self.time / 3.).cos();
-
-            //self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.1 * k;
-            //self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 10. * k;
-            //self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = -0.2 * k;
-            //self.sim.e_field[(width / 2, width / 2, width / 2, 0)] = 0.;
-            //self.sim.e_field[(width / 2, width / 2, width / 2, 1)] = 0.;
-            //self.sim.e_field[(width / 2, width / 2, width / 2, 2)] = 0.;
-            //self.sim.e_field[(width/2,width/2,width/2,1)] = 10.;
         }
 
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
@@ -202,11 +190,6 @@ impl eframe::App for TemplateApp {
                     .prefix("μ: ")
                     .speed(1e-3),
             );
-
-            if ui.button("Step").clicked() {
-                self.sim.step(&self.sim_cfg, &self.magnetization, &self.magnetization);
-            }
-
         });
 
         let circuit_state = self.circuit.state();
@@ -218,7 +201,7 @@ impl eframe::App for TemplateApp {
 
         TopBottomPanel::bottom("bottom panel").resizable(true).show(ctx, |ui| {
             self.circuit.show_add_components(ui, &mut rebuild_sim, &mut single_step);
-            self.circuit.update(ui, rebuild_sim, single_step, circuit_state);
+            self.circuit.update(ui, &mut rebuild_sim, &mut single_step, &circuit_state);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -239,10 +222,12 @@ impl eframe::App for TemplateApp {
 
                         self.grid_vis.draw(&self.sim, paint);
 
-                        self.wire_editor_3d
+                        rebuild_sim |= self.wire_editor_3d
                             .draw(self.sim.width(), thr, &mut self.wires);
                     });
             });
         });
+
+        self.circuit.step(rebuild_sim, single_step, &mut self.sim, &self.sim_cfg, &self.wires);
     }
 }
