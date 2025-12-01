@@ -146,7 +146,7 @@ impl WireEditor3D {
         }
 
         // Undo
-        if thr.resp.ctx.input(|r| r.modifiers.ctrl && r.key_released(egui::Key::U)) {
+        if thr.resp.ctx.input(|r| r.modifiers.ctrl && r.key_released(egui::Key::Z)) {
             if let Some(state) = self.undo.take() {
                 *wiring = state;
             }
@@ -209,41 +209,17 @@ impl WireEditor3D {
         let (sx, sy, sz) = start;
         let (ex, ey, ez) = end;
 
-        if sx < ex {
-            for x in sx..ex {
-                wiring.insert(((x, sy, sz), (x + 1, sy, sz)), wire);
-            }
-        } else {
-            for x in ex..sx {
-                wiring.insert(((x, sy, sz), (x - 1, sy, sz)), wire);
-            }
+        for x in sx.min(ex)..sx.max(ex) {
+            wiring.insert(((x, sy, sz), (x + 1, sy, sz)), wire);
+        }
+    
+        for y in sy.min(ey)..sy.max(ey) {
+            wiring.insert(((ex, y, sz), (ex, y + 1, sz)), wire);
         }
 
-        if sy < ey {
-            for y in sy..ey {
-                wiring.insert(((ex, y, sz), (ex, y + 1, sz)), wire);
-            }
-        } else {
-            for y in ey..sy {
-                wiring.insert(((ex, y, sz), (ex, y - 1, sz)), wire);
-            }
+        for z in sz.min(ez)..sz.max(ez) {
+            wiring.insert(((ex, ey, z), (ex, ey, z + 1)), wire);
         }
-
-        if sz < ez {
-            for z in sz..ez {
-                wiring.insert(((ex, ey, z), (ex, ey, z + 1)), wire);
-            }
-        } else {
-            for z in ez..sz {
-                wiring.insert(((ex, ey, z), (ex, ey, z - 1)), wire);
-            }
-        }
-
-
-
-
-
-
         
     }
 }
