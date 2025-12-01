@@ -1,4 +1,4 @@
-use egui::{DragValue, SidePanel};
+use egui::{DragValue, SidePanel, TopBottomPanel};
 use ndarray::Array4;
 
 use crate::{
@@ -150,7 +150,6 @@ impl eframe::App for TemplateApp {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-        let (mut rebuild_sim, mut single_step, mut circuit_state) = (false, false, None);
         SidePanel::left("left panel").show(ctx, |ui| {
             self.wire_editor_3d
                 .show_ui(ui, self.sim.width(), &mut self.wires);
@@ -214,10 +213,17 @@ impl eframe::App for TemplateApp {
                 self.sim.step(&self.sim_cfg, &self.magnetization, &self.magnetization);
             }
 
-            (rebuild_sim, single_step, circuit_state) = self.circuit.show_config(ui);
         });
 
-        SidePanel::right("right panel").show(ctx, |ui| {
+        let circuit_state = self.circuit.state();
+
+        let (mut rebuild_sim, mut single_step) = (false, false);
+        SidePanel::right("right panel").resizable(true).show(ctx, |ui| {
+            self.circuit.show_config(ui, &circuit_state, &mut rebuild_sim, &mut single_step);
+        });
+
+        TopBottomPanel::bottom("bottom panel").resizable(true).show(ctx, |ui| {
+            self.circuit.show_add_components(ui, &mut rebuild_sim, &mut single_step);
             self.circuit.update(ui, rebuild_sim, single_step, circuit_state);
         });
 

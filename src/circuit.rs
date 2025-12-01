@@ -63,13 +63,8 @@ impl CircuitApp {
 }
 
 impl CircuitApp {
-    pub fn show_config(&mut self, ui: &mut egui::Ui) -> (bool, bool, Option<DiagramState>) {
+    pub fn show_config(&mut self, ui: &mut egui::Ui, state: &Option<DiagramState>, rebuild_sim: &mut bool, single_step: &mut bool) {
         let mut rebuild_sim = self.sim.is_none();
-
-        // TODO: Cache this?
-        let state = self.state();
-
-        let mut single_step = false;
 
         ScrollArea::vertical().show(ui, |ui| {
             ui.strong("Simulation");
@@ -79,7 +74,7 @@ impl CircuitApp {
                     self.paused ^= true;
                 }
                 if self.paused {
-                    single_step |= ui.button("Single-step").clicked();
+                    *single_step |= ui.button("Single-step").clicked();
                 }
             });
 
@@ -179,15 +174,15 @@ impl CircuitApp {
                 //self.vis_opt.voltage_scale =
             }
         });
+    }
 
-
+    pub fn show_add_components(&mut self, ui: &mut egui::Ui, rebuild_sim: &mut bool, single_step: &mut bool) {
         ScrollArea::horizontal().show(ui, |ui| {
-
             ui.horizontal(|ui| {
                 ui.label("Add component: ");
                 let pos = egui_to_cellpos(self.view_rect.center());
                 if ui.button("Wire").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -195,7 +190,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Resistor").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -203,7 +198,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Inductor").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -211,7 +206,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Capacitor").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -219,7 +214,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Diode").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -227,7 +222,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Battery").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -235,7 +230,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Switch").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -243,7 +238,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Current source").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_twoterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -251,7 +246,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("PNP").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_threeterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -259,7 +254,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("NPN").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_threeterminal(
                         &mut self.current_file.diagram,
                         pos,
@@ -267,7 +262,7 @@ impl CircuitApp {
                     );
                 }
                 if ui.button("Port").clicked() {
-                    rebuild_sim = true;
+                    *rebuild_sim = true;
                     self.editor.new_port(
                         &mut self.current_file.diagram,
                         pos,
@@ -282,8 +277,6 @@ impl CircuitApp {
                    */
             });
         });
-
-        (rebuild_sim, single_step, state)
     }
 
     pub fn update(&mut self, ui: &mut egui::Ui, mut rebuild_sim: bool, single_step: bool, state: Option<DiagramState>) {
