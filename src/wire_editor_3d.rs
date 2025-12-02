@@ -294,6 +294,15 @@ impl Wiring3D {
             paint.text(pos, egui::Align2::RIGHT_TOP, &port.0, Default::default(), color);
         }
     }
+
+    pub fn ordered_wire_ids(&self) -> Vec<WireId> {
+        // TODO: This is slow as heck.
+        let mut ordered_keys: Vec<WireId> = wiring.wires.keys().copied().collect();
+        // Any deterministic ordering
+        ordered_keys.sort_by(|((ax1, ay1, az1), (ax2, ay2, az2)), ((bx1, by1, bz1), (bx2, by2, bz2))| {
+            ax1.cmp(bx1).then(ay1.cmp(by1).then(az1.cmp(bz1).then(ax2.cmp(bx2).then(ay2.cmp(by2).then(az2.cmp(bz2))))))
+        });
+    }
 }
 
 impl Wire {

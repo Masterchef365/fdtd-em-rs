@@ -228,6 +228,6 @@ impl eframe::App for TemplateApp {
             });
         });
 
-        self.circuit.step(rebuild_sim, single_step, &mut self.sim, &self.sim_cfg, &self.wires);
+        self.circuit.step(rebuild_sim, single_step, &mut self.sim, &self.sim_cfg, &self.wires, &state);
     }
 }

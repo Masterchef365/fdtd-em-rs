@@ -15,7 +15,7 @@ use cirmcut::circuit_widget::{
 };
 use ndarray::Array4;
 
-use crate::{sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::Wiring3D};
+use crate::{sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireId, Wiring3D}};
 
 pub struct CircuitApp {
     pub view_rect: Rect,
@@ -56,12 +56,24 @@ impl Default for CircuitApp {
     }
 }
 
+struct DiagramConversion {
+    diagram_state: DiagramState,
+    primitive_diagram_state: PrimitiveDiagram,
+    sim_outputs: SimOutputs,
+}
+
+impl DiagramConversion {
+    fn convert(sim: &Solver, wires: &Wiring3D) -> Self {
+        let mut diag = self.current_file.diagram.to_primitive_diagram();
+        insert_wiring_3d(&mut diag, wires);
+        let outs = sim.state(&diag);
+        (DiagramState::new(&outs, &diag), outs)
+    }
+}
+
 impl CircuitApp {
-    pub fn state(&self) -> Option<DiagramState> {
-        self.sim.as_ref().map(|sim| {
-            let diag = self.current_file.diagram.to_primitive_diagram();
-            DiagramState::new(&sim.state(&diag), &diag)
-        })
+    pub fn state(&self) -> Option<DiagramConversion> {
+        self.sim.as_ref().map(DiagramConversion::convert)
     }
 }
 
@@ -313,12 +325,19 @@ impl CircuitApp {
         });
     }
 
-    pub fn step(&mut self, rebuild_sim: bool, single_step: bool, fdtd_sim: &mut FdtdSim, fdtd_cfg: &FdtdSimConfig, wires: &Wiring3D) {
+    pub fn rebuild_sim(&mut self) {
+        self.sim = Some(Solver::new(
+            &primitive_diagram
+        ));
+    }
+
+    pub fn step(&mut self, rebuild_sim: bool, single_step: bool, fdtd_sim: &mut FdtdSim, fdtd_cfg: &FdtdSimConfig, wires: &Wiring3D, prev_state: Option<SimOutputs>) {
+        let mut primitive_diagram = self.current_file.diagram.to_primitive_diagram();
+        let elec = insert_elec_field(&mut primitive_diagram, fdtd_sim, wires);
+
         // Reset
         if rebuild_sim {
-            self.sim = Some(Solver::new(
-                &self.current_file.diagram.to_primitive_diagram(),
-            ));
+            
         }
 
         if !self.paused || rebuild_sim || single_step {
@@ -327,13 +346,11 @@ impl CircuitApp {
             if let Some(circuit_sim) = &mut self.sim {
                 //let start = std::time::Instant::now();
 
-                let primitive_diagram = self.current_file.diagram.to_primitive_diagram();
-
 
                 //let external_elec = 
 
                 let magnetization = Array4::<f32>::zeros(fdtd_sim.h_field.dim());
-                fdtd_sim.step(fdtd_cfg, &magnetization, &magnetization);
+                fdtd_sim.step(fdtd_cfg, &magnetization, &elec);
 
                 if let Err(e) = circuit_sim.step(
                     self.current_file.dt,
@@ -362,3 +379,5 @@ impl Default for CircuitFile {
     }
 }
 
+insert_wiring_3d() {
+}
