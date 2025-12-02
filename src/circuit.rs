@@ -380,9 +380,13 @@ fn insert_wiring_3d(prim: &mut PrimitiveDiagram, wiring: &Wiring3D) {
         nodes.insert(*b);
     }
     
-    let used_ports = vec![];
-    for (pt_3d, port) in &wiring.ports {
-        for port2d in prim.two_terminal
+    let mut used_ports = vec![];
+    for (pt_3d, port3d) in &wiring.ports {
+        for (pt_2d, port2d_name) in &prim.ports {
+            if &port3d.0 == &port2d_name {
+                used_ports.push((pt_2d, pt_3d));
+            }
+        }
     }
 
 }
