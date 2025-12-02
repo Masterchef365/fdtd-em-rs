@@ -1,7 +1,5 @@
 use std::{
-    ffi::OsStr,
-    fs::File,
-    path::{Path, PathBuf},
+    collections::HashSet, ffi::OsStr, fs::File, path::{Path, PathBuf}
 };
 
 use cirmcut::cirmcut_sim::{
@@ -58,22 +56,25 @@ impl Default for CircuitApp {
 
 struct DiagramConversion {
     diagram_state: DiagramState,
-    primitive_diagram_state: PrimitiveDiagram,
+    primitive_diagram: PrimitiveDiagram,
     sim_outputs: SimOutputs,
+    elec: Array4<f32>,
 }
 
 impl DiagramConversion {
-    fn convert(sim: &Solver, wires: &Wiring3D) -> Self {
-        let mut diag = self.current_file.diagram.to_primitive_diagram();
-        insert_wiring_3d(&mut diag, wires);
-        let outs = sim.state(&diag);
-        (DiagramState::new(&outs, &diag), outs)
+    fn convert(diagram: &Diagram, sim: &Solver, wiring: &Wiring3D) -> Self {
+        let mut primitive_diagram = diagram.to_primitive_diagram();
+        insert_wiring_3d(&mut primitive_diagram, wiring);
+        let sim_outputs = sim.state(&primitive_diagram);
+        let diagram_state = DiagramState::new(&sim_outputs, &primitive_diagram);
+
+        Self { diagram_state, primitive_diagram, sim_outputs, elec: todo!() }
     }
 }
 
 impl CircuitApp {
-    pub fn state(&self) -> Option<DiagramConversion> {
-        self.sim.as_ref().map(DiagramConversion::convert)
+    pub fn state(&self, wiring: &Wiring3D) -> Option<DiagramConversion> {
+        self.sim.as_ref().map(|sim| DiagramConversion::convert(&self.current_file.diagram, sim, wiring))
     }
 }
 
@@ -294,7 +295,7 @@ impl CircuitApp {
         });
     }
 
-    pub fn update(&mut self, ui: &mut egui::Ui, rebuild_sim: &mut bool, single_step: &mut bool, state: &Option<DiagramState>) {
+    pub fn update(&mut self, ui: &mut egui::Ui, rebuild_sim: &mut bool, single_step: &mut bool, state: &Option<DiagramConversion>) {
         if ui.button("Reset camera").clicked() {
             self.view_rect = Rect::ZERO;
         }
@@ -307,7 +308,7 @@ impl CircuitApp {
                     *rebuild_sim |= self.editor.edit(
                         ui,
                         &mut self.current_file.diagram,
-                        state,
+                        &state.diagram_state,
                         self.debug_draw,
                         &self.vis_opt,
                     );
@@ -325,19 +326,12 @@ impl CircuitApp {
         });
     }
 
-    pub fn rebuild_sim(&mut self) {
-        self.sim = Some(Solver::new(
-            &primitive_diagram
-        ));
-    }
-
-    pub fn step(&mut self, rebuild_sim: bool, single_step: bool, fdtd_sim: &mut FdtdSim, fdtd_cfg: &FdtdSimConfig, wires: &Wiring3D, prev_state: Option<SimOutputs>) {
-        let mut primitive_diagram = self.current_file.diagram.to_primitive_diagram();
-        let elec = insert_elec_field(&mut primitive_diagram, fdtd_sim, wires);
-
+    pub fn step(&mut self, rebuild_sim: bool, single_step: bool, fdtd_sim: &mut FdtdSim, fdtd_cfg: &FdtdSimConfig, state: &DiagramConversion) {
         // Reset
         if rebuild_sim {
-            
+            self.sim = Some(Solver::new(
+                &state.primitive_diagram
+            ));
         }
 
         if !self.paused || rebuild_sim || single_step {
@@ -350,11 +344,11 @@ impl CircuitApp {
                 //let external_elec = 
 
                 let magnetization = Array4::<f32>::zeros(fdtd_sim.h_field.dim());
-                fdtd_sim.step(fdtd_cfg, &magnetization, &elec);
+                fdtd_sim.step(fdtd_cfg, &magnetization, &state.elec);
 
                 if let Err(e) = circuit_sim.step(
                     self.current_file.dt,
-                    &primitive_diagram,
+                    &state.primitive_diagram,
                     &self.current_file.cfg,
                 ) {
                     eprintln!("{}", e);
@@ -379,5 +373,16 @@ impl Default for CircuitFile {
     }
 }
 
-insert_wiring_3d() {
+fn insert_wiring_3d(prim: &mut PrimitiveDiagram, wiring: &Wiring3D) {
+    let mut nodes = HashSet::new();
+    for (a, b) in wiring.wires.keys() {
+        nodes.insert(*a);
+        nodes.insert(*b);
+    }
+    
+    let used_ports = vec![];
+    for (pt_3d, port) in &wiring.ports {
+        for port2d in prim.two_terminal
+    }
+
 }
