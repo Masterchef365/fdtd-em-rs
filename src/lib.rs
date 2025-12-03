@@ -1,7 +1,7 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
 mod app;
-pub use app::TemplateApp;
+pub use app::FdtdApp;
 pub mod common;
 pub mod field_vis;
 pub mod sim;
