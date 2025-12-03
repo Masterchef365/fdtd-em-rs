@@ -1,4 +1,22 @@
+use cirmcut::{circuit_widget::Diagram, cirmcut_sim::solver::{Solver, SolverConfig}};
+
+use crate::{sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::Wiring3D};
+
+pub struct SimulationParameters {
+    fdtd_config: FdtdSimConfig,
+    fdtd_wiring: Wiring3D,
+    circuit_diagram: Diagram,
+    circuit_solver_cfg: SolverConfig,
+}
+
+pub struct SimulationState {
+    fdtd: FdtdSim,
+    circuit_solver: Solver,
+}
+
 pub struct FdtdApp {
+    save: SimulationParameters,
+    state: SimulationState,
 }
 
 impl Default for FdtdApp {
@@ -36,5 +54,12 @@ impl eframe::App for FdtdApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    }
+}
+
+impl SimulationState {
+    fn new(params: &SimulationParameters) -> Self {
+        Self {
+        }
     }
 }
