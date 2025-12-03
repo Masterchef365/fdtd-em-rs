@@ -192,16 +192,18 @@ impl eframe::App for TemplateApp {
             );
         });
 
-        let circuit_state = self.circuit.state();
+        let state = self.circuit.state(&self.wires);
 
         let (mut rebuild_sim, mut single_step) = (false, false);
         SidePanel::right("right panel").resizable(true).show(ctx, |ui| {
-            self.circuit.show_config(ui, &circuit_state, &mut rebuild_sim, &mut single_step);
+            if let Some(state) = state {
+                self.circuit.show_config(ui, &state.diagram_state, &mut rebuild_sim, &mut single_step);
+            }
         });
 
         TopBottomPanel::bottom("bottom panel").resizable(true).show(ctx, |ui| {
             self.circuit.show_add_components(ui, &mut rebuild_sim, &mut single_step);
-            self.circuit.update(ui, &mut rebuild_sim, &mut single_step, &circuit_state);
+            self.circuit.update(ui, &mut rebuild_sim, &mut single_step, &state);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -228,6 +230,8 @@ impl eframe::App for TemplateApp {
             });
         });
 
-        self.circuit.step(rebuild_sim, single_step, &mut self.sim, &self.sim_cfg, &self.wires, &state);
+        if let Some(state) = &state {
+            self.circuit.step(rebuild_sim, single_step, &mut self.sim, &self.sim_cfg, state);
+        }
     }
 }

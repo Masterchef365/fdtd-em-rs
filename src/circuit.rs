@@ -54,11 +54,11 @@ impl Default for CircuitApp {
     }
 }
 
-struct DiagramConversion {
-    diagram_state: DiagramState,
-    primitive_diagram: PrimitiveDiagram,
-    sim_outputs: SimOutputs,
-    elec: Array4<f32>,
+pub struct DiagramConversion {
+    pub diagram_state: DiagramState,
+    pub primitive_diagram: PrimitiveDiagram,
+    pub sim_outputs: SimOutputs,
+    pub elec: Array4<f32>,
 }
 
 impl DiagramConversion {
@@ -79,7 +79,7 @@ impl CircuitApp {
 }
 
 impl CircuitApp {
-    pub fn show_config(&mut self, ui: &mut egui::Ui, state: &Option<DiagramState>, rebuild_sim: &mut bool, single_step: &mut bool) {
+    pub fn show_config(&mut self, ui: &mut egui::Ui, state: Option<DiagramConversion>, rebuild_sim: &mut bool, single_step: &mut bool) {
         let mut rebuild_sim = self.sim.is_none();
 
         ScrollArea::vertical().show(ui, |ui| {
@@ -383,7 +383,7 @@ fn insert_wiring_3d(prim: &mut PrimitiveDiagram, wiring: &Wiring3D) {
     let mut used_ports = vec![];
     for (pt_3d, port3d) in &wiring.ports {
         for (pt_2d, port2d_name) in &prim.ports {
-            if &port3d.0 == &port2d_name {
+            if &port3d.0 == port2d_name {
                 used_ports.push((pt_2d, pt_3d));
             }
         }
