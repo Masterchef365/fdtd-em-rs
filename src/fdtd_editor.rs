@@ -25,7 +25,7 @@ impl FdtdEditor {
             wire_editor_3d: WireEditor3D::default(),
 
             streamers: Streamers::new(width, 5000),
-            enable_streamers: StreamersMode::Off,
+            enable_streamers: StreamersMode::HField,
             streamer_step: 0.01,
 
             grid_vis: GridVisualizationConfig::default(),
