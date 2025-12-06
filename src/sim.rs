@@ -1,8 +1,8 @@
 use ndarray::Array4;
 
 pub struct FdtdSim {
-    pub e_field: Array4<f32>,
-    pub h_field: Array4<f32>,
+    pub e_field: Array4<f64>,
+    pub h_field: Array4<f64>,
     width: usize,
 }
 
@@ -17,11 +17,11 @@ impl FdtdSim {
         }
     }
 
-    pub fn e_field(&self) -> &Array4<f32> {
+    pub fn e_field(&self) -> &Array4<f64> {
         &self.e_field
     }
 
-    pub fn h_field(&self) -> &Array4<f32> {
+    pub fn h_field(&self) -> &Array4<f64> {
         &self.h_field
     }
 
@@ -32,8 +32,8 @@ impl FdtdSim {
     pub fn step(
         &mut self,
         cfg: &FdtdSimConfig,
-        magnetization: &Array4<f32>,
-        external_elec: &Array4<f32>,
+        magnetization: &Array4<f64>,
+        external_elec: &Array4<f64>,
     ) {
         half_step(
             &mut self.e_field,
@@ -77,17 +77,17 @@ impl FdtdSim {
 
 pub struct FdtdSimConfig {
     /// Spacial step (meters)
-    pub dx: f32,
+    pub dx: f64,
     /// Time step (seconds)
-    pub dt: f32,
+    pub dt: f64,
     /// Permittivity N/A^2
-    pub mu: f32,
+    pub mu: f64,
     /// Permeability F/m
-    pub eps: f32,
+    pub eps: f64,
 }
 
 impl FdtdSimConfig {
-    pub fn scaling(&self) -> f32 {
+    pub fn scaling(&self) -> f64 {
         self.dt / self.dx / (self.mu * self.eps).sqrt()
     }
 }
@@ -99,7 +99,7 @@ const Z: usize = 2;
 /// Some Numerical Techniques for Maxwell's
 /// Equations in Different Types of Geometries
 /// (Bengt Fornberg)
-fn half_step(a: &mut Array4<f32>, b: &Array4<f32>, scale: f32, width: usize) {
+fn half_step(a: &mut Array4<f64>, b: &Array4<f64>, scale: f64, width: usize) {
     let dx = |(xi, yi, zi): (usize, usize, usize), coord: usize| {
         b[(xi + 1, yi, zi, coord)] - b[(xi - 1, yi, zi, coord)]
     };

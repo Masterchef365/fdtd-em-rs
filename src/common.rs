@@ -5,24 +5,24 @@ use threegui::{Painter3D, Vec3};
 
 pub type IntPos3 = (usize, usize, usize);
 
-fn read_array4(field: &Array4<f32>, i: isize, j: isize, k: isize) -> Option<Vec3> {
+fn read_array4(field: &Array4<f64>, i: isize, j: isize, k: isize) -> Option<Vec3> {
     if i < 0 || j < 0 || k < 0 {
         return None;
     }
 
     let [i, j, k] = [i, j, k].map(|x| x as usize);
     Some(Vec3::new(
-        *field.get((i, j, k, 0))?,
-        *field.get((i, j, k, 1))?,
-        *field.get((i, j, k, 2))?,
+        *field.get((i, j, k, 0))? as f32,
+        *field.get((i, j, k, 1))? as f32,
+        *field.get((i, j, k, 2))? as f32,
     ))
 }
 
-fn read_array4_or_zero(arr: &Array4<f32>, i: isize, j: isize, k: isize) -> Vec3 {
+fn read_array4_or_zero(arr: &Array4<f64>, i: isize, j: isize, k: isize) -> Vec3 {
     read_array4(arr, i, j, k).unwrap_or(Vec3::ZERO)
 }
 
-pub fn interp(arr: &Array4<f32>, pos: Vec3) -> Vec3 {
+pub fn interp(arr: &Array4<f64>, pos: Vec3) -> Vec3 {
     let fr = pos.fract();
     let [i, j, k] = pos.floor().to_array().map(|x| x as isize);
 
@@ -63,7 +63,7 @@ pub fn espacet(width: usize, (x, y, z): IntPos3) -> Vec3 {
 
 /*
 pub fn espace_inv(width: usize, v: Vec3) -> Vec3 {
-    v + Vec3::splat(width as f32 / 2.)
+    v + Vec3::splat(width as f64 / 2.)
 }
 
 pub fn espacet_inv(width: usize, v: Vec3) -> IntPos3 {

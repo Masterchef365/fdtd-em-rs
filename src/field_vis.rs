@@ -141,7 +141,7 @@ fn draw_hfield_grid(paint: &Painter3D, sim: &FdtdSim, stroke: Stroke, scale: f32
 
 fn draw_field_grid(
     paint: &Painter3D,
-    field: &Array4<f32>,
+    field: &Array4<f64>,
     width: usize,
     stroke: Stroke,
     scale: f32,
@@ -153,7 +153,7 @@ fn draw_field_grid(
                 for (coord, unit_vect) in [Vec3::X, Vec3::Y, Vec3::Z].into_iter().enumerate() {
                     let base = Vec3::new(i as f32, j as f32, k as f32);
                     let base = base + offset * (Vec3::ONE - unit_vect).abs();
-                    let extent = field[(i, j, k, coord)];
+                    let extent = field[(i, j, k, coord)] as f32;
 
                     let pos = espace(width, base);
                     let end = pos + unit_vect * extent * scale;
@@ -174,7 +174,7 @@ fn draw_hfield_vect(paint: &Painter3D, sim: &FdtdSim, stroke: Stroke, scale: f32
 
 fn draw_field_vect(
     paint: &Painter3D,
-    field: &Array4<f32>,
+    field: &Array4<f64>,
     width: usize,
     stroke: Stroke,
     scale: f32,
@@ -183,9 +183,9 @@ fn draw_field_vect(
         for j in 0..width {
             for k in 0..width {
                 let extent = Vec3::new(
-                    field[(i, j, k, 0)],
-                    field[(i, j, k, 1)],
-                    field[(i, j, k, 2)],
+                    field[(i, j, k, 0)] as _,
+                    field[(i, j, k, 1)] as _,
+                    field[(i, j, k, 2)] as _,
                 );
 
                 let pos = espacet(width, (i, j, k));
@@ -198,7 +198,7 @@ fn draw_field_vect(
 
 fn draw_field_magnitude(
     paint: &Painter3D,
-    field: &Array4<f32>,
+    field: &Array4<f64>,
     width: usize,
     color: Color32,
     scale: f32,
@@ -209,9 +209,9 @@ fn draw_field_magnitude(
             for k in 0..width {
                 let base = Vec3::new(i as f32, j as f32, k as f32);
                 let extent = Vec3::new(
-                    field[(i, j, k, 0)],
-                    field[(i, j, k, 1)],
-                    field[(i, j, k, 2)],
+                    field[(i, j, k, 0)] as _,
+                    field[(i, j, k, 1)] as _,
+                    field[(i, j, k, 2)] as _,
                 );
 
                 let pos = espace(width, base + offset);

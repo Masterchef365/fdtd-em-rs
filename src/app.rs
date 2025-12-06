@@ -8,6 +8,7 @@ use cirmcut::{
     },
 };
 use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
+use ndarray::Array4;
 
 use crate::{
     circuit_editor::CircuitEditor, common::IntPos3, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, Wiring3D}
@@ -36,8 +37,10 @@ pub struct SimulationControls {
 pub struct SimulationState {
     fdtd: FdtdSim,
     circuit_solver: Solver,
+
     primitive_diagram: PrimitiveDiagram,
     diagram_state: DiagramState,
+    nodemap: NodeMap,
 }
 
 /// Current state of the simulation editor.
@@ -134,6 +137,8 @@ impl FdtdApp {
         }
 
         if self.controls.do_step() || needs_rebuild {
+            // Create E field from wires 
+            //let elec = generate_efield();
             self.state.circuit_solver.step(
                 self.controls.dt,
                 &self.state.primitive_diagram,
@@ -155,26 +160,7 @@ impl SimulationState {
     fn new(params: &SimulationParameters) -> Self {
         let mut primitive_diagram = params.circuit_diagram.to_primitive_diagram();
 
-
-        fn nodemap_insert(map: &mut HashMap<IntPos3, usize>, pos: IntPos3, primitive_diagram: &mut PrimitiveDiagram) -> usize {
-            *map.entry(pos).or_insert_with(|| {
-                let idx = primitive_diagram.num_nodes;
-                primitive_diagram.num_nodes += 1;
-                idx
-            })
-        }
-
-
-        let mut nodemap = HashMap::new();
-        for ((a, b), wire) in &params.fdtd_wiring.wires {
-            let a_idx = nodemap_insert(&mut nodemap, *a, &mut primitive_diagram);
-            let b_idx = nodemap_insert(&mut nodemap, *b, &mut primitive_diagram);
-            let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
-            primitive_diagram.two_terminal.push(([a_idx, b_idx], component));
-        }
-
-
-
+        let nodemap = NodeMap::new(&mut primitive_diagram, &params.fdtd_wiring);
 
         let outputs = Solver::new(&primitive_diagram).state(&primitive_diagram);
         let diagram_state = DiagramState::new(&outputs, &primitive_diagram);
@@ -184,6 +170,7 @@ impl SimulationState {
             circuit_solver: Solver::new(&primitive_diagram),
             primitive_diagram,
             diagram_state,
+            nodemap,
         }
     }
 }
@@ -305,4 +292,38 @@ impl SimulationControls {
 
         ret
     }
+}
+
+/// Maps 3D nodes to 
+struct NodeMap {
+    pub map: HashMap<IntPos3, usize>,
+}
+
+impl NodeMap {
+    /// Inserts wires into the diagram, recording where nodes are
+    fn new(diagram: &mut PrimitiveDiagram, wiring: &Wiring3D) -> Self {
+        fn nodemap_insert(map: &mut HashMap<IntPos3, usize>, pos: IntPos3, primitive_diagram: &mut PrimitiveDiagram) -> usize {
+            *map.entry(pos).or_insert_with(|| {
+                let idx = primitive_diagram.num_nodes;
+                primitive_diagram.num_nodes += 1;
+                idx
+            })
+        }
+
+        let mut map = HashMap::new();
+        for ((a, b), wire) in &wiring.wires {
+            let a_idx = nodemap_insert(&mut map, *a, diagram);
+            let b_idx = nodemap_insert(&mut map, *b, diagram);
+            let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
+            diagram.two_terminal.push(([a_idx, b_idx], component));
+        }
+
+        Self {
+            map
+        }
+    }
+}
+
+fn generate_efield(nodemap: &NodeMap) -> Array4<f64> {
+    todo!()
 }
