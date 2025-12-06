@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use cirmcut::{
     circuit_widget::{Diagram, DiagramState},
     cirmcut_sim::{
-        PrimitiveDiagram,
-        solver::{Solver, SolverConfig},
+        solver::{Solver, SolverConfig}, PrimitiveDiagram, SimOutputs
     },
 };
 use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
@@ -41,6 +40,7 @@ pub struct SimulationState {
     primitive_diagram: PrimitiveDiagram,
     diagram_state: DiagramState,
     nodemap: NodeMap,
+    outputs: SimOutputs,
 }
 
 /// Current state of the simulation editor.
@@ -138,7 +138,16 @@ impl FdtdApp {
 
         if self.controls.do_step() || needs_rebuild {
             // Create E field from wires 
-            //let elec = generate_efield();
+            let width = self.state.fdtd.width();
+            let elec = generate_efield(&self.state.nodemap, &self.params.fdtd_wiring, &self.state.outputs, self.state.fdtd.width());
+            let magnetization = Array4::<f64>::zeros((width, width, width, 3));
+
+            // Step FDTD
+            //self.state.fdtd.step(&self.params.fdtd_config, &magnetization, &elec);
+
+            // Readback fdtd e-field into the soln vector
+
+            // Step circuit
             self.state.circuit_solver.step(
                 self.controls.dt,
                 &self.state.primitive_diagram,
@@ -162,15 +171,17 @@ impl SimulationState {
 
         let nodemap = NodeMap::new(&mut primitive_diagram, &params.fdtd_wiring);
 
-        let outputs = Solver::new(&primitive_diagram).state(&primitive_diagram);
+        let circuit_solver = Solver::new(&primitive_diagram);
+        let outputs = circuit_solver.state(&primitive_diagram);
         let diagram_state = DiagramState::new(&outputs, &primitive_diagram);
 
         Self {
             fdtd: FdtdSim::new(params.fdtd_width),
-            circuit_solver: Solver::new(&primitive_diagram),
+            circuit_solver,
             primitive_diagram,
             diagram_state,
             nodemap,
+            outputs,
         }
     }
 }
@@ -294,7 +305,7 @@ impl SimulationControls {
     }
 }
 
-/// Maps 3D nodes to 
+/// Maps 3D nodes to circuit simulator nodes
 struct NodeMap {
     pub map: HashMap<IntPos3, usize>,
 }
@@ -302,6 +313,7 @@ struct NodeMap {
 impl NodeMap {
     /// Inserts wires into the diagram, recording where nodes are
     fn new(diagram: &mut PrimitiveDiagram, wiring: &Wiring3D) -> Self {
+        // Helper function
         fn nodemap_insert(map: &mut HashMap<IntPos3, usize>, pos: IntPos3, primitive_diagram: &mut PrimitiveDiagram) -> usize {
             *map.entry(pos).or_insert_with(|| {
                 let idx = primitive_diagram.num_nodes;
@@ -310,6 +322,7 @@ impl NodeMap {
             })
         }
 
+        // Insert resistors for the wires
         let mut map = HashMap::new();
         for ((a, b), wire) in &wiring.wires {
             let a_idx = nodemap_insert(&mut map, *a, diagram);
@@ -324,6 +337,27 @@ impl NodeMap {
     }
 }
 
-fn generate_efield(nodemap: &NodeMap) -> Array4<f64> {
-    todo!()
+fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, width: usize) -> Array4<f64> {
+    let mut field = Array4::<f64>::zeros((width, width, width, 3));
+
+    for (a, b) in wiring.wires.keys() {
+        let (x, y, z) = *a;
+        let (bx, by, bz) = *b;
+
+        assert!(bx > x || by > y || bz > z);
+
+        let a_idx = nodemap.map[a];
+        let b_idx = nodemap.map[b];
+        let dv = outs.voltages[b_idx] - outs.voltages[a_idx];
+
+        if bx > x {
+            field[(x, y, z, 0)] = dv;
+        } else if by > y {
+            field[(x, y, z, 1)] = dv;
+        } else {
+            field[(x, y, z, 2)] = dv;
+        }
+    }
+
+    field
 }
