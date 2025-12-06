@@ -27,6 +27,7 @@ pub struct SimulationParameters {
 
 /// Controls for the simulation step (play, pause, single-step).
 pub struct SimulationControls {
+    dt: f32,
     paused: bool,
 }
 
@@ -92,7 +93,11 @@ impl eframe::App for FdtdApp {
         let mut needs_rebuild = false;
 
         SidePanel::left("cfg").show(ctx, |ui| {
-            needs_rebuild |= self.editor.show_cfg(ui, &mut self.params, &self.state);
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                needs_rebuild |= self.controls.show_ui(ui);
+                ui.separator();
+                needs_rebuild |= self.editor.show_cfg(ui, &mut self.params, &self.state);
+            });
         });
 
         SidePanel::right("circuit").show(ctx, |ui| {
@@ -143,7 +148,6 @@ impl SimulationEditor {
     ) -> bool {
         let mut needs_rebuild = false;
 
-        egui::ScrollArea::vertical().show(ui, |ui| {
             needs_rebuild |= self.circuit.show_cfg(
                 ui,
                 &mut params.circuit_diagram,
@@ -157,7 +161,6 @@ impl SimulationEditor {
                 &mut params.fdtd_config,
                 &mut params.fdtd_wiring,
             );
-        });
 
         needs_rebuild
     }
@@ -189,7 +192,8 @@ impl SimulationEditor {
 
 impl Default for SimulationControls {
     fn default() -> Self {
-        Self { paused: true }
+        Self { paused: true,  
+            dt: 5e-3 }
     }
 }
 
@@ -211,5 +215,26 @@ impl Default for SimulationParameters {
             circuit_diagram: Default::default(),
             circuit_solver_cfg: Default::default(),
         }
+    }
+}
+
+impl SimulationControls {
+    fn show_ui(&mut self, ui: &mut Ui) -> bool {
+        ui.strong("Time step");
+        ui.horizontal(|ui| {
+            ui.label("Time step: ");
+            ui.add(
+                egui::DragValue::new(&mut self.dt)
+                .speed(1e-7)
+                .suffix(" s"),
+            );
+        });
+
+        let text = if self.paused { "Play" } else { "Pause" };
+        if ui.button(text).clicked() {
+            self.paused = !self.paused;
+        }
+
+        ui.button("Reset Simulation").clicked()
     }
 }
