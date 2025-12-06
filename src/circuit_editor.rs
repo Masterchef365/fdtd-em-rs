@@ -212,7 +212,7 @@ impl CircuitEditor {
         &mut self,
         ui: &mut Ui,
         diagram: &mut Diagram,
-        state: Option<&DiagramState>,
+        state: &DiagramState,
     ) -> bool {
         let mut rebuild_sim = false;
 
@@ -220,11 +220,9 @@ impl CircuitEditor {
             let rect = self.view_rect;
             let resp = egui::Scene::new().show(ui, &mut self.view_rect, |ui| {
                 draw_grid(ui, rect, 1.0, Color32::DARK_GRAY);
-                if let Some(state) = state {
                     rebuild_sim |=
                         self.editor
                             .edit(ui, diagram, &state, self.debug_draw, &self.vis_opt);
-                }
             });
 
             if ui.input(|r| r.key_pressed(Key::Delete)) {

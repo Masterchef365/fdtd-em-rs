@@ -116,11 +116,11 @@ impl SimulationEditor {
     }
 
     pub fn show_circuit_editor(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &SimulationState) {
-
+        self.circuit.show_circuit_editor(ui, &mut params.circuit_diagram, &state.diagram_state);
     }
 
     pub fn show_fdtd_editor(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &SimulationState) {
-
+        self.fdtd.show_editor(ui, &state.fdtd, &mut params.fdtd_config, &mut params.fdtd_wiring);
     }
 }
 

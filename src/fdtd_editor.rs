@@ -99,7 +99,7 @@ impl FdtdEditor {
     }
 
     /// Returns true if the simulation should be rebuilt
-    pub fn show_editor(&mut self, ui: &mut Ui, sim: &mut FdtdSim, cfg: &mut FdtdSimConfig, wires: &mut Wiring3D) -> bool {
+    pub fn show_editor(&mut self, ui: &mut Ui, sim: &FdtdSim, cfg: &mut FdtdSimConfig, wires: &mut Wiring3D) -> bool {
         let mut rebuild_sim = false;
 
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
@@ -110,7 +110,7 @@ impl FdtdEditor {
 
                     // TODO: Make this configurable
                     self.streamers.step(
-                        &sim,
+                        sim,
                         paint,
                         self.streamer_step,
                         0.001,
