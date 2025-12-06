@@ -75,6 +75,7 @@ impl FdtdSim {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct FdtdSimConfig {
     /// Spacial step (meters)
     pub dx: f64,

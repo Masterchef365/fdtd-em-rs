@@ -16,6 +16,7 @@ use crate::{
 /// Every parameter needed for a simulation to proceed, including
 /// all wires, components, configuration options, etc.
 /// The output of the simulation is a pure function of this struct.
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct SimulationParameters {
     fdtd_width: usize,
     fdtd_config: FdtdSimConfig,
@@ -75,24 +76,26 @@ impl Default for FdtdApp {
 
 impl FdtdApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        /*
-        if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        }
-        */
+        let mut state = Self::default();
 
-        Default::default()
+        if let Some(storage) = cc.storage {
+            state.params = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        }
+
+        state
     }
 }
 
 impl eframe::App for FdtdApp {
-    /*
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+        eframe::set_value(storage, eframe::APP_KEY, &self.params);
     }
-    */
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if self.controls.is_step_this_frame() {
+            ctx.request_repaint();
+        }
+
         let mut needs_rebuild = false;
 
         SidePanel::left("cfg").show(ctx, |ui| {
@@ -158,11 +161,12 @@ impl FdtdApp {
                 &self.params.circuit_solver_cfg,
             )?;
 
-            let outputs = self
+            self.state.outputs = self
                 .state
                 .circuit_solver
                 .state(&self.state.primitive_diagram);
-            self.state.diagram_state = DiagramState::new(&outputs, &self.state.primitive_diagram);
+
+            self.state.diagram_state = DiagramState::new(&self.state.outputs, &self.state.primitive_diagram);
         }
 
         Ok(())
