@@ -89,19 +89,33 @@ impl eframe::App for FdtdApp {
     */
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut needs_rebuild = false;
+
         SidePanel::left("cfg").show(ctx, |ui| {
-            self.editor.show_cfg(ui, &mut self.params, &mut self.state);
+            needs_rebuild |= self.editor.show_cfg(ui, &mut self.params, &self.state);
         });
 
         SidePanel::right("circuit").show(ctx, |ui| {
-            self.editor
+            needs_rebuild |= self
+                .editor
                 .show_circuit_editor(ui, &mut self.params, &self.state);
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            self.editor
+            needs_rebuild |= self
+                .editor
                 .show_fdtd_editor(ui, &mut self.params, &self.state);
         });
+
+        self.step(needs_rebuild);
+    }
+}
+
+impl FdtdApp {
+    fn step(&mut self, needs_rebuild: bool) {
+        if needs_rebuild {
+            self.state = SimulationState::new(&self.params);
+        }
     }
 }
 
@@ -125,29 +139,27 @@ impl SimulationEditor {
         &mut self,
         ui: &mut Ui,
         params: &mut SimulationParameters,
-        state: &mut SimulationState,
-    ) {
+        state: &SimulationState,
+    ) -> bool {
         let mut needs_rebuild = false;
 
         egui::ScrollArea::vertical().show(ui, |ui| {
-        needs_rebuild |= self.circuit.show_cfg(
-            ui,
-            &mut params.circuit_diagram,
-            &mut params.circuit_solver_cfg,
-            &state.diagram_state,
-        );
-        ui.separator();
-        needs_rebuild |= self.fdtd.show_cfg(
-            ui,
-            &state.fdtd,
-            &mut params.fdtd_config,
-            &mut params.fdtd_wiring,
-        );
+            needs_rebuild |= self.circuit.show_cfg(
+                ui,
+                &mut params.circuit_diagram,
+                &mut params.circuit_solver_cfg,
+                &state.diagram_state,
+            );
+            ui.separator();
+            needs_rebuild |= self.fdtd.show_cfg(
+                ui,
+                &state.fdtd,
+                &mut params.fdtd_config,
+                &mut params.fdtd_wiring,
+            );
         });
 
-        if needs_rebuild {
-            *state = SimulationState::new(params);
-        }
+        needs_rebuild
     }
 
     pub fn show_circuit_editor(
@@ -155,9 +167,9 @@ impl SimulationEditor {
         ui: &mut Ui,
         params: &mut SimulationParameters,
         state: &SimulationState,
-    ) {
+    ) -> bool {
         self.circuit
-            .show_circuit_editor(ui, &mut params.circuit_diagram, &state.diagram_state);
+            .show_circuit_editor(ui, &mut params.circuit_diagram, &state.diagram_state)
     }
 
     pub fn show_fdtd_editor(
@@ -165,13 +177,13 @@ impl SimulationEditor {
         ui: &mut Ui,
         params: &mut SimulationParameters,
         state: &SimulationState,
-    ) {
+    ) -> bool {
         self.fdtd.show_editor(
             ui,
             &state.fdtd,
             &mut params.fdtd_config,
             &mut params.fdtd_wiring,
-        );
+        )
     }
 }
 
