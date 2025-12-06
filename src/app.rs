@@ -126,6 +126,8 @@ impl eframe::App for FdtdApp {
 
         if let Err(e) = ret {
             self.error_shown = Some(e);
+        } else {
+            self.error_shown = None;
         }
     }
 }
