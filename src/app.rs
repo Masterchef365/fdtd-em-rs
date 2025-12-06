@@ -1,8 +1,8 @@
 use cirmcut::{
     circuit_widget::{Diagram, DiagramState},
     cirmcut_sim::{
-        solver::{Solver, SolverConfig},
         PrimitiveDiagram,
+        solver::{Solver, SolverConfig},
     },
 };
 use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};

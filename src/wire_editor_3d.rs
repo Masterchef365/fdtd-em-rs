@@ -40,7 +40,10 @@ enum Selection {
 
 impl Default for WireEditor3D {
     fn default() -> Self {
-        Self { sel_pos: None, undo: None }
+        Self {
+            sel_pos: None,
+            undo: None,
+        }
     }
 }
 
@@ -149,7 +152,11 @@ impl WireEditor3D {
         }
 
         // Undo
-        if thr.resp.ctx.input(|r| r.modifiers.ctrl && r.key_released(egui::Key::Z)) {
+        if thr
+            .resp
+            .ctx
+            .input(|r| r.modifiers.ctrl && r.key_released(egui::Key::Z))
+        {
             if let Some(state) = self.undo.take() {
                 *wiring = state;
                 return true;
@@ -254,7 +261,7 @@ impl WireEditor3D {
         for x in sx.min(ex)..sx.max(ex) {
             wiring.insert(((x, sy, sz), (x + 1, sy, sz)), wire);
         }
-    
+
         for y in sy.min(ey)..sy.max(ey) {
             wiring.insert(((ex, y, sz), (ex, y + 1, sz)), wire);
         }
@@ -262,7 +269,6 @@ impl WireEditor3D {
         for z in sz.min(ez)..sz.max(ez) {
             wiring.insert(((ex, ey, z), (ex, ey, z + 1)), wire);
         }
-        
     }
 }
 
@@ -300,7 +306,13 @@ impl Wiring3D {
             let color = Color32::ORANGE;
             let pos = espacet(width, *pos);
             paint.circle(pos, 7.0, Stroke::new(1.0, color));
-            paint.text(pos, egui::Align2::RIGHT_TOP, &port.0, Default::default(), color);
+            paint.text(
+                pos,
+                egui::Align2::RIGHT_TOP,
+                &port.0,
+                Default::default(),
+                color,
+            );
         }
     }
 
@@ -308,9 +320,16 @@ impl Wiring3D {
         // TODO: This is slow as heck.
         let mut ordered_keys: Vec<WireId> = self.wires.keys().copied().collect();
         // Any deterministic ordering
-        ordered_keys.sort_by(|((ax1, ay1, az1), (ax2, ay2, az2)), ((bx1, by1, bz1), (bx2, by2, bz2))| {
-            ax1.cmp(bx1).then(ay1.cmp(by1).then(az1.cmp(bz1).then(ax2.cmp(bx2).then(ay2.cmp(by2).then(az2.cmp(bz2))))))
-        });
+        ordered_keys.sort_by(
+            |((ax1, ay1, az1), (ax2, ay2, az2)), ((bx1, by1, bz1), (bx2, by2, bz2))| {
+                ax1.cmp(bx1).then(
+                    ay1.cmp(by1).then(
+                        az1.cmp(bz1)
+                            .then(ax2.cmp(bx2).then(ay2.cmp(by2).then(az2.cmp(bz2)))),
+                    ),
+                )
+            },
+        );
 
         ordered_keys
     }

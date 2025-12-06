@@ -5,16 +5,16 @@ use std::{
 };
 
 use cirmcut::cirmcut_sim::{
-    solver::{Solver, SolverConfig, SolverMode},
     PrimitiveDiagram, SimOutputs, ThreeTerminalComponent, TwoTerminalComponent,
+    solver::{Solver, SolverConfig, SolverMode},
 };
 use egui::{
     Color32, DragValue, Key, Layout, Pos2, Rect, RichText, ScrollArea, Ui, Vec2, ViewportCommand,
 };
 
 use cirmcut::circuit_widget::{
-    draw_grid, egui_to_cellpos, Diagram, DiagramEditor, DiagramState, DiagramWireState,
-    VisualizationOptions,
+    Diagram, DiagramEditor, DiagramState, DiagramWireState, VisualizationOptions, draw_grid,
+    egui_to_cellpos,
 };
 
 pub struct CircuitEditor {

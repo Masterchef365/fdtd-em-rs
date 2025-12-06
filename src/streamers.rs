@@ -56,10 +56,7 @@ impl Streamers {
         for point in &mut self.points {
             let width = sim.width();
             let w = width as f32;
-            let out_of_bounds = point
-                .to_array()
-                .into_iter()
-                .any(|x| x < 0.0 || x > w - 1.0);
+            let out_of_bounds = point.to_array().into_iter().any(|x| x < 0.0 || x > w - 1.0);
 
             if out_of_bounds || rng.gen_bool(shimmer) {
                 *point = Self::random_pos(width, &mut rng);

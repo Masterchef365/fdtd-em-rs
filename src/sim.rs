@@ -29,7 +29,12 @@ impl FdtdSim {
         self.width
     }
 
-    pub fn step(&mut self, cfg: &FdtdSimConfig, magnetization: &Array4<f32>, external_elec: &Array4<f32>) {
+    pub fn step(
+        &mut self,
+        cfg: &FdtdSimConfig,
+        magnetization: &Array4<f32>,
+        external_elec: &Array4<f32>,
+    ) {
         half_step(
             &mut self.e_field,
             &(&self.h_field + magnetization),
@@ -49,7 +54,12 @@ impl FdtdSim {
             }
         }
 
-        half_step(&mut self.h_field, &(&self.e_field + external_elec), -cfg.scaling(), self.width);
+        half_step(
+            &mut self.h_field,
+            &(&self.e_field + external_elec),
+            -cfg.scaling(),
+            self.width,
+        );
 
         let width = self.width();
         for xi in 0..width {
