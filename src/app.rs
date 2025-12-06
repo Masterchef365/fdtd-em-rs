@@ -29,6 +29,7 @@ pub struct SimulationParameters {
 pub struct SimulationControls {
     dt: f32,
     paused: bool,
+    single_step: bool,
 }
 
 /// The current, transient state of the simulation and
@@ -120,6 +121,10 @@ impl FdtdApp {
     fn step(&mut self, needs_rebuild: bool) {
         if needs_rebuild {
             self.state = SimulationState::new(&self.params);
+        }
+
+        if self.controls.do_step() || needs_rebuild {
+
         }
     }
 }
@@ -236,5 +241,15 @@ impl SimulationControls {
         }
 
         ui.button("Reset Simulation").clicked()
+    }
+
+    fn do_step(&mut self) -> bool {
+        let ret = !self.paused || self.single_step;
+
+        if self.single_step {
+            self.single_step = false;
+        }
+
+        ret
     }
 }
