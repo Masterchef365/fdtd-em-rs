@@ -334,6 +334,12 @@ impl NodeMap {
         }
 
         // Ports
+        for (pos, port) in &wiring.ports {
+            if let Some(node_idx) = map.get(&pos) {
+                rich.ports.entry(port.0.clone()).or_default().push(*node_idx);
+            }
+        }
+
         for (_name, port_indices) in &rich.ports {
             for i in 0..port_indices.len() {
                 for j in i + 1..port_indices.len() {
