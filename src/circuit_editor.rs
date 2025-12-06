@@ -51,12 +51,12 @@ impl Default for CircuitEditor {
 
 impl CircuitEditor {
     /// Returns true if the sim should be rebuilt
-    fn update_cfg(
+    pub fn show_cfg(
         &mut self,
         ui: &mut Ui,
         diagram: &mut Diagram,
         cfg: &mut SolverConfig,
-        state: Option<&DiagramState>,
+        state: &DiagramState,
     ) -> bool {
         let mut rebuild_sim = false;
 
@@ -113,9 +113,7 @@ impl CircuitEditor {
 
             ui.separator();
 
-            if let Some(state) = &state {
-                rebuild_sim |= self.editor.edit_component(ui, diagram, state);
-            }
+            rebuild_sim |= self.editor.edit_component(ui, diagram, state);
 
             ui.separator();
             ui.strong("Visualization");
@@ -130,19 +128,16 @@ impl CircuitEditor {
                     .speed(1e-2),
             );
             if ui.button("Auto scale").clicked() {
-                if let Some(state) = &state {
-                    let all_wires = state.two_terminal.iter().copied().flatten();
-                    self.vis_opt.voltage_scale = all_wires
-                        .clone()
-                        .map(|wire| wire.voltage.abs())
-                        .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
-                        .unwrap_or(VisualizationOptions::default().voltage_scale);
-                    self.vis_opt.current_scale = all_wires
-                        .map(|wire| wire.current.abs())
-                        .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
-                        .unwrap_or(VisualizationOptions::default().current_scale);
-                }
-                //self.vis_opt.voltage_scale =
+                let all_wires = state.two_terminal.iter().copied().flatten();
+                self.vis_opt.voltage_scale = all_wires
+                    .clone()
+                    .map(|wire| wire.voltage.abs())
+                    .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
+                    .unwrap_or(VisualizationOptions::default().voltage_scale);
+                self.vis_opt.current_scale = all_wires
+                    .map(|wire| wire.current.abs())
+                    .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
+                    .unwrap_or(VisualizationOptions::default().current_scale);
             }
         });
 
@@ -213,7 +208,7 @@ impl CircuitEditor {
     }
 
     /// Returns true if the sim should be rebuilt
-    fn show_circuit_editor(
+    pub fn show_circuit_editor(
         &mut self,
         ui: &mut Ui,
         diagram: &mut Diagram,

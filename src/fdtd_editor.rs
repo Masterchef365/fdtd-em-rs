@@ -47,7 +47,7 @@ impl FdtdEditor {
     }
     */
 
-    pub fn show_cfg(&mut self, ui: &mut Ui, sim: &mut FdtdSim, cfg: &mut FdtdSimConfig, wires: &mut Wiring3D) {
+    pub fn show_cfg(&mut self, ui: &mut Ui, sim: &FdtdSim, cfg: &mut FdtdSimConfig, wires: &mut Wiring3D) {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 

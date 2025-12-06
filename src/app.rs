@@ -1,4 +1,4 @@
-use cirmcut::{circuit_widget::Diagram, cirmcut_sim::{solver::{Solver, SolverConfig}, PrimitiveDiagram}};
+use cirmcut::{circuit_widget::{Diagram, DiagramState}, cirmcut_sim::{solver::{Solver, SolverConfig}, PrimitiveDiagram}};
 use egui::{CentralPanel, SidePanel, Ui};
 
 use crate::{circuit_editor::CircuitEditor, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, Wiring3D}};
@@ -26,6 +26,7 @@ pub struct SimulationState {
     fdtd: FdtdSim,
     circuit_solver: Solver,
     primitive_diagram: PrimitiveDiagram,
+    diagram_state: DiagramState,
 }
 
 /// Current state of the simulation editor.
@@ -78,7 +79,11 @@ impl eframe::App for FdtdApp {
     */
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        SidePanel::left("circuit").show(ctx, |ui| {
+        SidePanel::left("cfg").show(ctx, |ui| {
+            self.editor.show_cfg(ui, &mut self.params, &mut self.state);
+        });
+
+        SidePanel::right("circuit").show(ctx, |ui| {
             self.editor.show_circuit_editor(ui, &mut self.params, &self.state);
         });
 
@@ -91,16 +96,25 @@ impl eframe::App for FdtdApp {
 impl SimulationState {
     fn new(params: &SimulationParameters) -> Self {
         let primitive_diagram = params.circuit_diagram.to_primitive_diagram();
+        let outputs = Solver::new(&primitive_diagram).state(&primitive_diagram);
+        let diagram_state = DiagramState::new(&outputs, &primitive_diagram);
 
         Self {
             fdtd: FdtdSim::new(params.fdtd_width),
             circuit_solver: Solver::new(&primitive_diagram),
             primitive_diagram,
+            diagram_state,
         }
     }
 }
 
 impl SimulationEditor {
+    pub fn show_cfg(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &mut SimulationState) {
+        self.circuit.show_cfg(ui, &mut params.circuit_diagram, &mut params.circuit_solver_cfg, &state.diagram_state);
+        ui.separator();
+        self.fdtd.show_cfg(ui, &state.fdtd, &mut params.fdtd_config, &mut params.fdtd_wiring);
+    }
+
     pub fn show_circuit_editor(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &SimulationState) {
 
     }
