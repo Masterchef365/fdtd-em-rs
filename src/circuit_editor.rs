@@ -62,84 +62,82 @@ impl CircuitEditor {
 
         let mut single_step = false;
 
-        ScrollArea::vertical().show(ui, |ui| {
-            rebuild_sim |= ui.button("Reset").clicked();
+        rebuild_sim |= ui.button("Reset").clicked();
 
-            /*
+        /*
+        ui.add(
+            DragValue::new(&mut self.current_file.dt)
+                .prefix("dt: ")
+                .speed(1e-7)
+                .suffix(" s"),
+        );
+        */
+
+        if let Some(error) = &self.error {
+            ui.label(RichText::new(error).color(Color32::RED));
+        }
+
+        ui.separator();
+        ui.strong("Advanced");
+
+        ui.add(DragValue::new(&mut cfg.max_nr_iters).prefix("Max NR iters: "));
+        ui.horizontal(|ui| {
             ui.add(
-                DragValue::new(&mut self.current_file.dt)
-                    .prefix("dt: ")
-                    .speed(1e-7)
-                    .suffix(" s"),
-            );
-            */
-
-            if let Some(error) = &self.error {
-                ui.label(RichText::new(error).color(Color32::RED));
-            }
-
-            ui.separator();
-            ui.strong("Advanced");
-
-            ui.add(DragValue::new(&mut cfg.max_nr_iters).prefix("Max NR iters: "));
-            ui.horizontal(|ui| {
-                ui.add(
-                    DragValue::new(&mut cfg.nr_step_size)
-                        .speed(1e-6)
-                        .prefix("Initial NR step size: "),
-                );
-                ui.checkbox(&mut cfg.adaptive_step_size, "Adaptive");
-            });
-
-            ui.add(
-                DragValue::new(&mut cfg.nr_tolerance)
+                DragValue::new(&mut cfg.nr_step_size)
                     .speed(1e-6)
-                    .prefix("NR tolerance: "),
+                    .prefix("Initial NR step size: "),
             );
-            ui.add(
-                DragValue::new(&mut cfg.dx_soln_tolerance)
-                    .speed(1e-6)
-                    .prefix("Matrix solve tol: "),
-            );
-
-            ui.horizontal(|ui| {
-                ui.selectable_value(&mut cfg.mode, SolverMode::NewtonRaphson, "Newton-Raphson");
-                ui.selectable_value(&mut cfg.mode, SolverMode::Linear, "Linear");
-            });
-
-            if ui.button("Default cfg").clicked() {
-                *cfg = Default::default();
-            }
-
-            ui.separator();
-
-            rebuild_sim |= self.editor.edit_component(ui, diagram, state);
-
-            ui.separator();
-            ui.strong("Visualization");
-            ui.add(
-                DragValue::new(&mut self.vis_opt.voltage_scale)
-                    .prefix("Voltage scale: ")
-                    .speed(1e-2),
-            );
-            ui.add(
-                DragValue::new(&mut self.vis_opt.current_scale)
-                    .prefix("Current scale: ")
-                    .speed(1e-2),
-            );
-            if ui.button("Auto scale").clicked() {
-                let all_wires = state.two_terminal.iter().copied().flatten();
-                self.vis_opt.voltage_scale = all_wires
-                    .clone()
-                    .map(|wire| wire.voltage.abs())
-                    .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
-                    .unwrap_or(VisualizationOptions::default().voltage_scale);
-                self.vis_opt.current_scale = all_wires
-                    .map(|wire| wire.current.abs())
-                    .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
-                    .unwrap_or(VisualizationOptions::default().current_scale);
-            }
+            ui.checkbox(&mut cfg.adaptive_step_size, "Adaptive");
         });
+
+        ui.add(
+            DragValue::new(&mut cfg.nr_tolerance)
+                .speed(1e-6)
+                .prefix("NR tolerance: "),
+        );
+        ui.add(
+            DragValue::new(&mut cfg.dx_soln_tolerance)
+                .speed(1e-6)
+                .prefix("Matrix solve tol: "),
+        );
+
+        ui.horizontal(|ui| {
+            ui.selectable_value(&mut cfg.mode, SolverMode::NewtonRaphson, "Newton-Raphson");
+            ui.selectable_value(&mut cfg.mode, SolverMode::Linear, "Linear");
+        });
+
+        if ui.button("Default cfg").clicked() {
+            *cfg = Default::default();
+        }
+
+        ui.separator();
+
+        rebuild_sim |= self.editor.edit_component(ui, diagram, state);
+
+        ui.separator();
+        ui.strong("Visualization");
+        ui.add(
+            DragValue::new(&mut self.vis_opt.voltage_scale)
+                .prefix("Voltage scale: ")
+                .speed(1e-2),
+        );
+        ui.add(
+            DragValue::new(&mut self.vis_opt.current_scale)
+                .prefix("Current scale: ")
+                .speed(1e-2),
+        );
+        if ui.button("Auto scale").clicked() {
+            let all_wires = state.two_terminal.iter().copied().flatten();
+            self.vis_opt.voltage_scale = all_wires
+                .clone()
+                .map(|wire| wire.voltage.abs())
+                .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
+                .unwrap_or(VisualizationOptions::default().voltage_scale);
+            self.vis_opt.current_scale = all_wires
+                .map(|wire| wire.current.abs())
+                .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
+                .unwrap_or(VisualizationOptions::default().current_scale);
+        }
 
         ui.label("Add component: ");
         let pos = egui_to_cellpos(self.view_rect.center());
@@ -220,9 +218,9 @@ impl CircuitEditor {
             let rect = self.view_rect;
             let resp = egui::Scene::new().show(ui, &mut self.view_rect, |ui| {
                 draw_grid(ui, rect, 1.0, Color32::DARK_GRAY);
-                    rebuild_sim |=
-                        self.editor
-                            .edit(ui, diagram, &state, self.debug_draw, &self.vis_opt);
+                rebuild_sim |=
+                    self.editor
+                        .edit(ui, diagram, &state, self.debug_draw, &self.vis_opt);
             });
 
             if ui.input(|r| r.key_pressed(Key::Delete)) {

@@ -127,6 +127,7 @@ impl SimulationEditor {
         params: &mut SimulationParameters,
         state: &mut SimulationState,
     ) {
+        egui::ScrollArea::vertical().show(ui, |ui| {
         self.circuit.show_cfg(
             ui,
             &mut params.circuit_diagram,
@@ -140,6 +141,7 @@ impl SimulationEditor {
             &mut params.fdtd_config,
             &mut params.fdtd_wiring,
         );
+        });
     }
 
     pub fn show_circuit_editor(
