@@ -113,3 +113,14 @@ fn half_step(a: &mut Array4<f32>, b: &Array4<f32>, scale: f32, width: usize) {
         }
     }
 }
+
+impl Default for FdtdSimConfig {
+    fn default() -> Self {
+        Self {
+            dx: 1.,
+            dt: 0.005,
+            mu: 1.,
+            eps: 1.,
+        }
+    }
+}
