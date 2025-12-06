@@ -1,12 +1,22 @@
-use cirmcut::{circuit_widget::{Diagram, DiagramState}, cirmcut_sim::{solver::{Solver, SolverConfig}, PrimitiveDiagram}};
+use cirmcut::{
+    circuit_widget::{Diagram, DiagramState},
+    cirmcut_sim::{
+        solver::{Solver, SolverConfig},
+        PrimitiveDiagram,
+    },
+};
 use egui::{CentralPanel, SidePanel, Ui};
 
-use crate::{circuit_editor::CircuitEditor, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, Wiring3D}};
+use crate::{
+    circuit_editor::CircuitEditor,
+    fdtd_editor::FdtdEditor,
+    sim::{FdtdSim, FdtdSimConfig},
+    wire_editor_3d::{WireEditor3D, Wiring3D},
+};
 
 /// Every parameter needed for a simulation to proceed, including
 /// all wires, components, configuration options, etc.
 /// The output of the simulation is a pure function of this struct.
-#[derive(Default)]
 pub struct SimulationParameters {
     fdtd_width: usize,
     fdtd_config: FdtdSimConfig,
@@ -20,7 +30,7 @@ pub struct SimulationControls {
     paused: bool,
 }
 
-/// The current, transient state of the simulation and 
+/// The current, transient state of the simulation and
 /// any quantities derived during its creation.
 pub struct SimulationState {
     fdtd: FdtdSim,
@@ -84,11 +94,13 @@ impl eframe::App for FdtdApp {
         });
 
         SidePanel::right("circuit").show(ctx, |ui| {
-            self.editor.show_circuit_editor(ui, &mut self.params, &self.state);
+            self.editor
+                .show_circuit_editor(ui, &mut self.params, &self.state);
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            self.editor.show_fdtd_editor(ui, &mut self.params, &self.state);
+            self.editor
+                .show_fdtd_editor(ui, &mut self.params, &self.state);
         });
     }
 }
@@ -109,18 +121,49 @@ impl SimulationState {
 }
 
 impl SimulationEditor {
-    pub fn show_cfg(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &mut SimulationState) {
-        self.circuit.show_cfg(ui, &mut params.circuit_diagram, &mut params.circuit_solver_cfg, &state.diagram_state);
+    pub fn show_cfg(
+        &mut self,
+        ui: &mut Ui,
+        params: &mut SimulationParameters,
+        state: &mut SimulationState,
+    ) {
+        self.circuit.show_cfg(
+            ui,
+            &mut params.circuit_diagram,
+            &mut params.circuit_solver_cfg,
+            &state.diagram_state,
+        );
         ui.separator();
-        self.fdtd.show_cfg(ui, &state.fdtd, &mut params.fdtd_config, &mut params.fdtd_wiring);
+        self.fdtd.show_cfg(
+            ui,
+            &state.fdtd,
+            &mut params.fdtd_config,
+            &mut params.fdtd_wiring,
+        );
     }
 
-    pub fn show_circuit_editor(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &SimulationState) {
-        self.circuit.show_circuit_editor(ui, &mut params.circuit_diagram, &state.diagram_state);
+    pub fn show_circuit_editor(
+        &mut self,
+        ui: &mut Ui,
+        params: &mut SimulationParameters,
+        state: &SimulationState,
+    ) {
+        self.circuit
+            .show_circuit_editor(ui, &mut params.circuit_diagram, &state.diagram_state);
     }
 
-    pub fn show_fdtd_editor(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &SimulationState) {
-        self.fdtd.show_editor(ui, &state.fdtd, &mut params.fdtd_config, &mut params.fdtd_wiring);
+    pub fn show_fdtd_editor(
+        &mut self,
+        ui: &mut Ui,
+        params: &mut SimulationParameters,
+        state: &SimulationState,
+    ) {
+        self.fdtd.show_editor(
+            ui,
+            &state.fdtd,
+            &mut params.fdtd_config,
+            &mut params.fdtd_wiring,
+        );
     }
 }
 
@@ -132,6 +175,21 @@ impl Default for SimulationControls {
 
 impl SimulationEditor {
     fn new(cfg: &SimulationParameters) -> Self {
-        Self { circuit: CircuitEditor::default(), fdtd: FdtdEditor::new(cfg.fdtd_width) }
+        Self {
+            circuit: CircuitEditor::default(),
+            fdtd: FdtdEditor::new(cfg.fdtd_width),
+        }
+    }
+}
+
+impl Default for SimulationParameters {
+    fn default() -> Self {
+        Self {
+            fdtd_width: 10,
+            fdtd_config: Default::default(),
+            fdtd_wiring: Default::default(),
+            circuit_diagram: Default::default(),
+            circuit_solver_cfg: Default::default(),
+        }
     }
 }
