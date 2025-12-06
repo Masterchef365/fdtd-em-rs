@@ -10,7 +10,7 @@ use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
 use ndarray::Array4;
 
 use crate::{
-    circuit_editor::CircuitEditor, common::IntPos3, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, Wiring3D}
+    circuit_editor::CircuitEditor, common::IntPos3, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, WireId, Wiring3D}
 };
 
 /// Every parameter needed for a simulation to proceed, including
@@ -148,7 +148,8 @@ impl FdtdApp {
             //self.state.fdtd.step(&self.params.fdtd_config, &magnetization, &elec);
 
             // Copy the fdtd e-field into the soln vector
-            readback_efield(&self.state.nodemap, &self.params.fdtd_wiring, &self.state.circuit_solver, &self.state.fdtd);
+            // TODO: SET THIS BACK TO THE MEASURED E FIELD
+            readback_efield(&elec, &self.state.nodemap, &self.params.fdtd_wiring, &mut self.state.circuit_solver, self.state.fdtd.width());
 
             // Step circuit
             self.state.circuit_solver.step(
@@ -335,7 +336,7 @@ impl NodeMap {
             let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
             let component_idx = rich.primitive.two_terminal.len();
             rich.primitive.two_terminal.push(([a_idx, b_idx], component));
-            component_idx_map.insert(wire_id, component_idx)
+            component_idx_map.insert(*wire_id, component_idx);
         }
 
         // Ports
@@ -387,7 +388,7 @@ fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, widt
     field
 }
 
-fn readback_efield(field: &Array4<f32>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &mut Solver, width: usize) {
+fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &mut Solver, width: usize) {
     for wire_id @ (a, b) in wiring.wires.keys() {
         let (x, y, z) = *a;
         let (bx, by, bz) = *b;
@@ -406,7 +407,7 @@ fn readback_efield(field: &Array4<f32>, nodemap: &NodeMap, wiring: &Wiring3D, ou
         };
 
         let component_idx = nodemap.component_idx_map.get(wire_id).unwrap();
-        let soln_vec_idx = outs.map.state_map.voltage_drops()[component_idx];
+        let soln_vec_idx = outs.map.state_map.voltage_drops().nth(*component_idx).unwrap();
 
         outs.soln_vector[soln_vec_idx] = voltage_drop;
     }
