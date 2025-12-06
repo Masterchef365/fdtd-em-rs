@@ -47,11 +47,12 @@ impl FdtdEditor {
     }
     */
 
-    pub fn show_cfg(&mut self, ui: &mut Ui, sim: &FdtdSim, cfg: &mut FdtdSimConfig, wires: &mut Wiring3D) {
+    /// Returns true if the change would require an external update
+    pub fn show_cfg(&mut self, ui: &mut Ui, sim: &FdtdSim, cfg: &mut FdtdSimConfig, wires: &mut Wiring3D) -> bool {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
-            self.wire_editor_3d
+            let rebuild = self.wire_editor_3d
                 .show_ui(ui, sim.width(), wires);
 
             ui.strong("Background grid");
@@ -96,6 +97,8 @@ impl FdtdEditor {
                     .prefix("μ: ")
                     .speed(1e-3),
             );
+
+            rebuild
     }
 
     /// Returns true if the simulation should be rebuilt

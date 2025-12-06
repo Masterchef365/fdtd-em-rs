@@ -127,21 +127,27 @@ impl SimulationEditor {
         params: &mut SimulationParameters,
         state: &mut SimulationState,
     ) {
+        let mut needs_rebuild = false;
+
         egui::ScrollArea::vertical().show(ui, |ui| {
-        self.circuit.show_cfg(
+        needs_rebuild |= self.circuit.show_cfg(
             ui,
             &mut params.circuit_diagram,
             &mut params.circuit_solver_cfg,
             &state.diagram_state,
         );
         ui.separator();
-        self.fdtd.show_cfg(
+        needs_rebuild |= self.fdtd.show_cfg(
             ui,
             &state.fdtd,
             &mut params.fdtd_config,
             &mut params.fdtd_wiring,
         );
         });
+
+        if needs_rebuild {
+            *state = SimulationState::new(params);
+        }
     }
 
     pub fn show_circuit_editor(

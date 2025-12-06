@@ -184,7 +184,9 @@ impl WireEditor3D {
         return false;
     }
 
-    pub fn show_ui(&mut self, ui: &mut Ui, width: usize, wiring: &mut Wiring3D) {
+    pub fn show_ui(&mut self, ui: &mut Ui, width: usize, wiring: &mut Wiring3D) -> bool {
+        let mut rebuild_sim = false;
+
         ui.strong("Wires");
 
         if ui.button("Add wire").clicked() {
@@ -198,6 +200,7 @@ impl WireEditor3D {
                 let line = (pos, b);
                 wiring.insert(line, DEFAULT_WIRE);
                 self.sel_pos = Some(Selection::WireId(line));
+                rebuild_sim = true;
             }
         }
         ui.label("A quicker way is to select a point, then hold shift and select another.");
@@ -210,6 +213,7 @@ impl WireEditor3D {
                 if ui.button("Delete").clicked() {
                     wiring.wires.remove(&wire_id);
                     self.sel_pos = None;
+                    rebuild_sim = true;
                 }
             }
         }
@@ -220,18 +224,23 @@ impl WireEditor3D {
                 ui.horizontal(|ui| {
                     ui.label("Port: ");
                     ui.text_edit_singleline(&mut port.0);
+                    rebuild_sim = true;
                 });
                 if ui.button("Delete").clicked() {
                     wiring.ports.remove(&pos);
+                    rebuild_sim = true;
                 }
             } else {
                 if ui.button("Add port").clicked() {
                     wiring.ports.insert(pos, Port("New port".into()));
+                    rebuild_sim = true;
                 }
             }
         }
 
         ui.separator();
+
+        rebuild_sim
     }
 
     fn line_to_selection(&mut self, start: IntPos3, wiring: &mut Wiring3D, wire: Wire) {
