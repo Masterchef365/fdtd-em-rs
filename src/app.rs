@@ -149,7 +149,7 @@ impl FdtdApp {
 
             // Copy the fdtd e-field into the soln vector
             // TODO: SET THIS BACK TO THE MEASURED E FIELD
-            readback_efield(&elec, &self.state.nodemap, &self.params.fdtd_wiring, &mut self.state.circuit_solver, self.state.fdtd.width());
+            readback_efield(&elec, &self.state.nodemap, &self.params.fdtd_wiring, &mut self.state.circuit_solver);
 
             // Step circuit
             self.state.circuit_solver.step(
@@ -388,15 +388,12 @@ fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, widt
     field
 }
 
-fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &mut Solver, width: usize) {
+fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &mut Solver) {
     for wire_id @ (a, b) in wiring.wires.keys() {
         let (x, y, z) = *a;
         let (bx, by, bz) = *b;
 
         assert!(bx > x || by > y || bz > z);
-
-        let a_idx = nodemap.pos_map[a];
-        let b_idx = nodemap.pos_map[b];
 
         let voltage_drop = if bx > x {
             field[(x, y, z, 0)]
