@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use cirmcut::{
-    circuit_widget::{Diagram, DiagramState},
+    circuit_widget::{Diagram, DiagramState, RichPrimitiveDiagram},
     cirmcut_sim::{
         map::PrimitiveDiagramMapping, solver::{Solver, SolverConfig}, PrimitiveDiagram, SimOutputs
     },
@@ -169,7 +169,7 @@ impl SimulationState {
     fn new(params: &SimulationParameters) -> Self {
         let mut rich = params.circuit_diagram.to_primitive_diagram();
 
-        let nodemap = NodeMap::new(, &mut rich.primitive, &params.fdtd_wiring);
+        let nodemap = NodeMap::new(&mut rich, &params.fdtd_wiring);
 
         let circuit_solver = Solver::new(&rich.primitive);
         let outputs = circuit_solver.state(&rich.primitive);
@@ -312,7 +312,7 @@ struct NodeMap {
 
 impl NodeMap {
     /// Inserts wires into the diagram, recording where nodes are
-    fn new(diagram: &Diagram, primitive_diagram: &mut PrimitiveDiagram, wiring: &Wiring3D) -> Self {
+    fn new(rich: &mut RichPrimitiveDiagram, wiring: &Wiring3D) -> Self {
         // Helper function
         fn nodemap_insert(map: &mut HashMap<IntPos3, usize>, pos: IntPos3, primitive_diagram: &mut PrimitiveDiagram) -> usize {
             *map.entry(pos).or_insert_with(|| {
@@ -325,17 +325,22 @@ impl NodeMap {
         // Insert resistors for the wires
         let mut map = HashMap::new();
         for ((a, b), wire) in &wiring.wires {
-            let a_idx = nodemap_insert(&mut map, *a, primitive_diagram);
-            let b_idx = nodemap_insert(&mut map, *b, primitive_diagram);
+            let a_idx = nodemap_insert(&mut map, *a, &mut rich.primitive);
+            let b_idx = nodemap_insert(&mut map, *b, &mut rich.primitive);
             let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
-            primitive_diagram.two_terminal.push(([a_idx, b_idx], component));
+            rich.primitive.two_terminal.push(([a_idx, b_idx], component));
         }
 
         // Ports
-        let diag_map = PrimitiveDiagramMapping::new(&primitive_diagram);
-        let mut all_ports = diagram.ports.iter().map(|(pos, port_name)| {
-            diag_map.state_map.vo
-        });
+        for (_name, port_indices) in &rich.ports {
+            for i in 0..port_indices.len() {
+                for j in i + 1..port_indices.len() {
+                    let indices = [port_indices[i], port_indices[j]];
+                    let comp = cirmcut::cirmcut_sim::TwoTerminalComponent::Wire;
+                    rich.primitive.two_terminal.push((indices, comp));
+                }
+            }
+        }
 
         Self {
             map
