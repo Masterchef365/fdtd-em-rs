@@ -120,26 +120,35 @@ impl eframe::App for FdtdApp {
                 .show_fdtd_editor(ui, &mut self.params, &self.state);
         });
 
-        self.step(needs_rebuild);
+        let ret = self.step(needs_rebuild);
+
+        if let Err(e) = ret {
+            self.error_shown = Some(e);
+        }
     }
 }
 
 impl FdtdApp {
-    fn step(&mut self, needs_rebuild: bool) {
+    fn step(&mut self, needs_rebuild: bool) -> Result<(), String> {
         if needs_rebuild {
             self.state = SimulationState::new(&self.params);
         }
 
         if self.controls.do_step() || needs_rebuild {
-            let ret = self.state.circuit_solver.step(self.controls.dt, &self.state.primitive_diagram, &self.params.circuit_solver_cfg);
+            self.state.circuit_solver.step(
+                self.controls.dt,
+                &self.state.primitive_diagram,
+                &self.params.circuit_solver_cfg,
+            )?;
 
-            if let Err(e) = ret {
-                self.error_shown = Some(e);
-            } else {
-                let outputs = self.state.circuit_solver.state(&self.state.primitive_diagram);
-                self.state.diagram_state = DiagramState::new(&outputs, &self.state.primitive_diagram)
-            }
+            let outputs = self
+                .state
+                .circuit_solver
+                .state(&self.state.primitive_diagram);
+            self.state.diagram_state = DiagramState::new(&outputs, &self.state.primitive_diagram);
         }
+
+        Ok(())
     }
 }
 
