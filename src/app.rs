@@ -147,7 +147,8 @@ impl FdtdApp {
             // Step FDTD
             //self.state.fdtd.step(&self.params.fdtd_config, &magnetization, &elec);
 
-            // Readback fdtd e-field into the soln vector
+            // Copy the fdtd e-field into the soln vector
+            readback_efield(&self.state.nodemap, &self.params.fdtd_wiring, &self.state.circuit_solver, &self.state.fdtd);
 
             // Step circuit
             self.state.circuit_solver.step(
@@ -309,7 +310,8 @@ impl SimulationControls {
 
 /// Maps 3D nodes to circuit simulator nodes
 struct NodeMap {
-    pub map: HashMap<IntPos3, usize>,
+    pub pos_map: HashMap<IntPos3, usize>,
+    pub component_idx_map: HashMap<WireId, usize>,
 }
 
 impl NodeMap {
@@ -325,17 +327,20 @@ impl NodeMap {
         }
 
         // Insert resistors for the wires
-        let mut map = HashMap::new();
-        for ((a, b), wire) in &wiring.wires {
-            let a_idx = nodemap_insert(&mut map, *a, &mut rich.primitive);
-            let b_idx = nodemap_insert(&mut map, *b, &mut rich.primitive);
+        let mut pos_map = HashMap::new();
+        let mut component_idx_map = HashMap::new();
+        for (wire_id @ (a, b), wire) in &wiring.wires {
+            let a_idx = nodemap_insert(&mut pos_map, *a, &mut rich.primitive);
+            let b_idx = nodemap_insert(&mut pos_map, *b, &mut rich.primitive);
             let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
+            let component_idx = rich.primitive.two_terminal.len();
             rich.primitive.two_terminal.push(([a_idx, b_idx], component));
+            component_idx_map.insert(wire_id, component_idx)
         }
 
         // Ports
         for (pos, port) in &wiring.ports {
-            if let Some(node_idx) = map.get(&pos) {
+            if let Some(node_idx) = pos_map.get(&pos) {
                 rich.ports.entry(port.0.clone()).or_default().push(*node_idx);
             }
         }
@@ -351,7 +356,8 @@ impl NodeMap {
         }
 
         Self {
-            map
+            pos_map,
+            component_idx_map,
         }
     }
 }
@@ -365,8 +371,8 @@ fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, widt
 
         assert!(bx > x || by > y || bz > z);
 
-        let a_idx = nodemap.map[a];
-        let b_idx = nodemap.map[b];
+        let a_idx = nodemap.pos_map[a];
+        let b_idx = nodemap.pos_map[b];
         let dv = outs.voltages[b_idx] - outs.voltages[a_idx];
 
         if bx > x {
@@ -379,4 +385,29 @@ fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, widt
     }
 
     field
+}
+
+fn readback_efield(field: &Array4<f32>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &mut Solver, width: usize) {
+    for wire_id @ (a, b) in wiring.wires.keys() {
+        let (x, y, z) = *a;
+        let (bx, by, bz) = *b;
+
+        assert!(bx > x || by > y || bz > z);
+
+        let a_idx = nodemap.pos_map[a];
+        let b_idx = nodemap.pos_map[b];
+
+        let voltage_drop = if bx > x {
+            field[(x, y, z, 0)]
+        } else if by > y {
+            field[(x, y, z, 1)]
+        } else {
+            field[(x, y, z, 2)]
+        };
+
+        let component_idx = nodemap.component_idx_map.get(wire_id).unwrap();
+        let soln_vec_idx = outs.map.state_map.voltage_drops()[component_idx];
+
+        outs.soln_vector[soln_vec_idx] = voltage_drop;
+    }
 }
