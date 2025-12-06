@@ -11,7 +11,7 @@ use crate::{
 #[derive(Clone, Copy)]
 pub struct Wire {
     /// Ohms
-    resistance: f32,
+    pub resistance: f32,
 }
 
 const DEFAULT_WIRE: Wire = Wire { resistance: 1e-3 };

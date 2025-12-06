@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cirmcut::{
     circuit_widget::{Diagram, DiagramState},
     cirmcut_sim::{
@@ -8,10 +10,7 @@ use cirmcut::{
 use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
 
 use crate::{
-    circuit_editor::CircuitEditor,
-    fdtd_editor::FdtdEditor,
-    sim::{FdtdSim, FdtdSimConfig},
-    wire_editor_3d::{WireEditor3D, Wiring3D},
+    circuit_editor::CircuitEditor, common::IntPos3, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, Wiring3D}
 };
 
 /// Every parameter needed for a simulation to proceed, including
@@ -154,7 +153,29 @@ impl FdtdApp {
 
 impl SimulationState {
     fn new(params: &SimulationParameters) -> Self {
-        let primitive_diagram = params.circuit_diagram.to_primitive_diagram();
+        let mut primitive_diagram = params.circuit_diagram.to_primitive_diagram();
+
+
+        fn nodemap_insert(map: &mut HashMap<IntPos3, usize>, pos: IntPos3, primitive_diagram: &mut PrimitiveDiagram) -> usize {
+            *map.entry(pos).or_insert_with(|| {
+                let idx = primitive_diagram.num_nodes;
+                primitive_diagram.num_nodes += 1;
+                idx
+            })
+        }
+
+
+        let mut nodemap = HashMap::new();
+        for ((a, b), wire) in &params.fdtd_wiring.wires {
+            let a_idx = nodemap_insert(&mut nodemap, *a, &mut primitive_diagram);
+            let b_idx = nodemap_insert(&mut nodemap, *b, &mut primitive_diagram);
+            let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
+            primitive_diagram.two_terminal.push(([a_idx, b_idx], component));
+        }
+
+
+
+
         let outputs = Solver::new(&primitive_diagram).state(&primitive_diagram);
         let diagram_state = DiagramState::new(&outputs, &primitive_diagram);
 
