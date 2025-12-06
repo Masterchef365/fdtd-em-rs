@@ -20,19 +20,20 @@ pub struct Streamers {
 }
 
 impl Streamers {
-    pub fn new(sim: &FdtdSim, n: usize) -> Self {
+    pub fn new(width: usize, n: usize) -> Self {
         let mut rng = rand::thread_rng();
 
         Self {
-            points: (0..n).map(|_| Self::random_pos(sim, &mut rng)).collect(),
+            points: (0..n).map(|_| Self::random_pos(width, &mut rng)).collect(),
         }
     }
 
-    fn random_pos(sim: &FdtdSim, rng: &mut impl Rng) -> Vec3 {
+    fn random_pos(width: usize, rng: &mut impl Rng) -> Vec3 {
+        let width = width as f32 - 1.0;
         Vec3::new(
-            rng.gen_range(0.0..=sim.width() as f32 - 1.0),
-            rng.gen_range(0.0..=sim.width() as f32 - 1.0),
-            rng.gen_range(0.0..=sim.width() as f32 - 1.0),
+            rng.gen_range(0.0..=width),
+            rng.gen_range(0.0..=width),
+            rng.gen_range(0.0..=width),
         )
     }
 
@@ -53,14 +54,15 @@ impl Streamers {
 
         let mut rng = rand::thread_rng();
         for point in &mut self.points {
-            let width = sim.width() as f32;
+            let width = sim.width();
+            let w = width as f32;
             let out_of_bounds = point
                 .to_array()
                 .into_iter()
-                .any(|x| x < 0.0 || x > width - 1.0);
+                .any(|x| x < 0.0 || x > w - 1.0);
 
             if out_of_bounds || rng.gen_bool(shimmer) {
-                *point = Self::random_pos(sim, &mut rng);
+                *point = Self::random_pos(width, &mut rng);
                 continue;
             }
 

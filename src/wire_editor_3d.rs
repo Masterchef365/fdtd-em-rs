@@ -92,7 +92,7 @@ fn find_closest_wire_screenspace(
 
 impl WireEditor3D {
     /// Returns true if the edit was destructive
-    pub fn draw(&mut self, width: usize, thr: &ThreeUi, wiring: &mut Wiring3D) -> bool {
+    pub fn edit(&mut self, width: usize, thr: &ThreeUi, wiring: &mut Wiring3D) -> bool {
         let paint = thr.painter();
 
         // Draw wiring

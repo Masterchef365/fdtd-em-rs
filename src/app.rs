@@ -1,7 +1,11 @@
 use cirmcut::{circuit_widget::Diagram, cirmcut_sim::{solver::{Solver, SolverConfig}, PrimitiveDiagram}};
+use egui::{CentralPanel, SidePanel, Ui};
 
-use crate::{sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::Wiring3D};
+use crate::{circuit_editor::CircuitEditor, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, Wiring3D}};
 
+/// Every parameter needed for a simulation to proceed, including
+/// all wires, components, configuration options, etc.
+/// The output of the simulation is a pure function of this struct.
 #[derive(Default)]
 pub struct SimulationParameters {
     fdtd_width: usize,
@@ -11,36 +15,52 @@ pub struct SimulationParameters {
     circuit_solver_cfg: SolverConfig,
 }
 
+/// Controls for the simulation step (play, pause, single-step).
+pub struct SimulationControls {
+    paused: bool,
+}
+
+/// The current, transient state of the simulation and 
+/// any quantities derived during its creation.
 pub struct SimulationState {
     fdtd: FdtdSim,
     circuit_solver: Solver,
     primitive_diagram: PrimitiveDiagram,
 }
 
+/// Current state of the simulation editor.
+pub struct SimulationEditor {
+    circuit: CircuitEditor,
+    fdtd: FdtdEditor,
+}
+
+/// Application
 pub struct FdtdApp {
     params: SimulationParameters,
     state: SimulationState,
+    controls: SimulationControls,
+    editor: SimulationEditor,
+    /// Any error information from the simulation step is stored here.
+    error_shown: Option<String>,
 }
 
 impl Default for FdtdApp {
     fn default() -> Self {
         let params = SimulationParameters::default();
+        let state = SimulationState::new(&params);
         Self {
-            state: SimulationState::new(&params),
+            controls: Default::default(),
+            editor: SimulationEditor::new(&params),
+            error_shown: None,
+            state,
             params,
         }
     }
 }
 
 impl FdtdApp {
-    /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
         /*
-        // Load previous app state (if any).
-        // Note that you must enable the `persistence` feature for this to work.
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }
@@ -52,25 +72,52 @@ impl FdtdApp {
 
 impl eframe::App for FdtdApp {
     /*
-    /// Called by the frame work to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
     }
     */
 
-    /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        SidePanel::left("circuit").show(ctx, |ui| {
+            self.editor.show_circuit_editor(ui, &mut self.params, &self.state);
+        });
 
+        CentralPanel::default().show(ctx, |ui| {
+            self.editor.show_fdtd_editor(ui, &mut self.params, &self.state);
+        });
     }
 }
 
 impl SimulationState {
     fn new(params: &SimulationParameters) -> Self {
-        let mut primitive_diagram = params.circuit_diagram.to_primitive_diagram();
+        let primitive_diagram = params.circuit_diagram.to_primitive_diagram();
+
         Self {
-            primitive_diagram,
             fdtd: FdtdSim::new(params.fdtd_width),
             circuit_solver: Solver::new(&primitive_diagram),
+            primitive_diagram,
         }
+    }
+}
+
+impl SimulationEditor {
+    pub fn show_circuit_editor(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &SimulationState) {
+
+    }
+
+    pub fn show_fdtd_editor(&mut self, ui: &mut Ui, params: &mut SimulationParameters, state: &SimulationState) {
+
+    }
+}
+
+impl Default for SimulationControls {
+    fn default() -> Self {
+        Self { paused: true }
+    }
+}
+
+impl SimulationEditor {
+    fn new(cfg: &SimulationParameters) -> Self {
+        Self { circuit: CircuitEditor::default(), fdtd: FdtdEditor::new(cfg.fdtd_width) }
     }
 }
