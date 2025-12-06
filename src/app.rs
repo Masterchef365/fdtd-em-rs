@@ -5,7 +5,7 @@ use cirmcut::{
         PrimitiveDiagram,
     },
 };
-use egui::{CentralPanel, SidePanel, Ui};
+use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
 
 use crate::{
     circuit_editor::CircuitEditor,
@@ -27,7 +27,7 @@ pub struct SimulationParameters {
 
 /// Controls for the simulation step (play, pause, single-step).
 pub struct SimulationControls {
-    dt: f32,
+    dt: f64,
     paused: bool,
     single_step: bool,
 }
@@ -96,8 +96,14 @@ impl eframe::App for FdtdApp {
         SidePanel::left("cfg").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 needs_rebuild |= self.controls.show_ui(ui);
+
+                if let Some(error) = &self.error_shown {
+                    ui.label(RichText::new(error).color(Color32::RED));
+                }
+
                 ui.separator();
                 needs_rebuild |= self.editor.show_cfg(ui, &mut self.params, &self.state);
+                ui.separator();
             });
         });
 
@@ -124,7 +130,11 @@ impl FdtdApp {
         }
 
         if self.controls.do_step() || needs_rebuild {
+            let ret = self.state.circuit_solver.step(self.controls.dt, &self.state.primitive_diagram, &self.params.circuit_solver_cfg);
 
+            if let Err(e) = ret {
+                self.error_shown = Some(e);
+            }
         }
     }
 }
@@ -153,19 +163,19 @@ impl SimulationEditor {
     ) -> bool {
         let mut needs_rebuild = false;
 
-            needs_rebuild |= self.circuit.show_cfg(
-                ui,
-                &mut params.circuit_diagram,
-                &mut params.circuit_solver_cfg,
-                &state.diagram_state,
-            );
-            ui.separator();
-            needs_rebuild |= self.fdtd.show_cfg(
-                ui,
-                &state.fdtd,
-                &mut params.fdtd_config,
-                &mut params.fdtd_wiring,
-            );
+        needs_rebuild |= self.circuit.show_cfg(
+            ui,
+            &mut params.circuit_diagram,
+            &mut params.circuit_solver_cfg,
+            &state.diagram_state,
+        );
+        ui.separator();
+        needs_rebuild |= self.fdtd.show_cfg(
+            ui,
+            &state.fdtd,
+            &mut params.fdtd_config,
+            &mut params.fdtd_wiring,
+        );
 
         needs_rebuild
     }
@@ -197,8 +207,11 @@ impl SimulationEditor {
 
 impl Default for SimulationControls {
     fn default() -> Self {
-        Self { paused: true,  
-            dt: 5e-3 }
+        Self {
+            paused: true,
+            single_step: false,
+            dt: 5e-3,
+        }
     }
 }
 
@@ -228,11 +241,7 @@ impl SimulationControls {
         ui.strong("Time step");
         ui.horizontal(|ui| {
             ui.label("Time step: ");
-            ui.add(
-                egui::DragValue::new(&mut self.dt)
-                .speed(1e-7)
-                .suffix(" s"),
-            );
+            ui.add(egui::DragValue::new(&mut self.dt).speed(1e-7).suffix(" s"));
         });
 
         let text = if self.paused { "Play" } else { "Pause" };
@@ -240,11 +249,19 @@ impl SimulationControls {
             self.paused = !self.paused;
         }
 
+        if ui.button("Single step").clicked() {
+            self.single_step = true;
+        }
+
         ui.button("Reset Simulation").clicked()
     }
 
+    fn is_step_this_frame(&mut self) -> bool {
+        !self.paused || self.single_step
+    }
+
     fn do_step(&mut self) -> bool {
-        let ret = !self.paused || self.single_step;
+        let ret = self.is_step_this_frame();
 
         if self.single_step {
             self.single_step = false;
