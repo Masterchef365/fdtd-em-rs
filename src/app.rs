@@ -145,11 +145,11 @@ impl FdtdApp {
             let magnetization = Array4::<f64>::zeros((width, width, width, 3));
 
             // Step FDTD
-            //self.state.fdtd.step(&self.params.fdtd_config, &magnetization, &elec);
+            self.state.fdtd.step(&self.params.fdtd_config, &magnetization, &elec);
 
             // Copy the fdtd e-field into the soln vector
             // TODO: SET THIS BACK TO THE MEASURED E FIELD
-            readback_efield(&elec, &self.state.nodemap, &self.params.fdtd_wiring, &mut self.state.circuit_solver);
+            readback_efield(self.state.fdtd.e_field(), &self.state.nodemap, &self.params.fdtd_wiring, &mut self.state.circuit_solver);
 
             // Step circuit
             self.state.circuit_solver.step(
