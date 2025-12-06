@@ -95,6 +95,7 @@ impl eframe::App for FdtdApp {
 
         SidePanel::left("cfg").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.heading("Common");
                 needs_rebuild |= self.controls.show_ui(ui);
 
                 if let Some(error) = &self.error_shown {
@@ -134,6 +135,9 @@ impl FdtdApp {
 
             if let Err(e) = ret {
                 self.error_shown = Some(e);
+            } else {
+                let outputs = self.state.circuit_solver.state(&self.state.primitive_diagram);
+                self.state.diagram_state = DiagramState::new(&outputs, &self.state.primitive_diagram)
             }
         }
     }
@@ -163,6 +167,7 @@ impl SimulationEditor {
     ) -> bool {
         let mut needs_rebuild = false;
 
+        ui.heading("Circuit");
         needs_rebuild |= self.circuit.show_cfg(
             ui,
             &mut params.circuit_diagram,
@@ -170,6 +175,7 @@ impl SimulationEditor {
             &state.diagram_state,
         );
         ui.separator();
+        ui.heading("FDTD");
         needs_rebuild |= self.fdtd.show_cfg(
             ui,
             &state.fdtd,
