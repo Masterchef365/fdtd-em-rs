@@ -12,7 +12,12 @@ use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
 use ndarray::Array4;
 
 use crate::{
-    circuit_editor::CircuitEditor, common::IntPos3, fdtd_editor::FdtdEditor, node_map::NodeMap, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, WireId, Wiring3D}
+    circuit_editor::CircuitEditor,
+    common::IntPos3,
+    fdtd_editor::FdtdEditor,
+    node_map::NodeMap,
+    sim::{FdtdSim, FdtdSimConfig},
+    wire_editor_3d::{WireEditor3D, WireId, Wiring3D},
 };
 
 #[derive(Clone, Copy)]
@@ -36,7 +41,7 @@ impl Pane {
     }
 }
 
-struct TreeBehavior { 
+struct TreeBehavior {
     params: SimulationParameters,
     state: SimulationState,
     controls: SimulationControls,
@@ -347,8 +352,6 @@ impl SimulationControls {
     }
 }
 
-
-
 fn generate_efield(
     fdtd: &mut FdtdSim,
     nodemap: &NodeMap,
@@ -425,7 +428,14 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
     let mut tiles = egui_tiles::Tiles::default();
 
     //let [common, fdtd, circuit, fdtd_cfg, cricuit_cfg] = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].map(|pane| tiles.insert_tab_tile(vec![tiles.insert_pane(pane)]));
-    let [common, fdtd, circuit, fdtd_cfg, circuit_cfg] = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].map(|pane| tiles.insert_pane(pane));
+    let [common, fdtd, circuit, fdtd_cfg, circuit_cfg] = [
+        Pane::CommonCfg,
+        Pane::FdtdEditor,
+        Pane::CircuitEditor,
+        Pane::FdtdEditorCfg,
+        Pane::CircuitEditorCfg,
+    ]
+    .map(|pane| tiles.insert_pane(pane));
 
     let left_bar = tiles.insert_vertical_tile(vec![common, fdtd_cfg]);
     let left = tiles.insert_horizontal_tile(vec![left_bar, fdtd]);
@@ -443,7 +453,10 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     }
 
     fn simplification_options(&self) -> egui_tiles::SimplificationOptions {
-        egui_tiles::SimplificationOptions { all_panes_must_have_tabs: true, ..Default::default() }
+        egui_tiles::SimplificationOptions {
+            all_panes_must_have_tabs: true,
+            ..Default::default()
+        }
     }
 
     fn pane_ui(
@@ -452,7 +465,6 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         _tile_id: egui_tiles::TileId,
         pane: &mut Pane,
     ) -> egui_tiles::UiResponse {
-
         match pane {
             Pane::CommonCfg => {
                 self.needs_rebuild |= self.controls.show_ui(ui);
@@ -463,22 +475,27 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                 if let Some(error) = &self.error_shown {
                     ui.label(RichText::new(error).color(Color32::RED));
                 }
-            },
+            }
             Pane::FdtdEditorCfg => {
                 self.needs_rebuild |= self.editor.show_fdtd_cfg(ui, &mut self.params, &self.state);
-            },
+            }
             Pane::CircuitEditorCfg => {
-                self.needs_rebuild |= self.editor.show_circuit_cfg(ui, &mut self.params, &self.state);
-            },
+                self.needs_rebuild |=
+                    self.editor
+                        .show_circuit_cfg(ui, &mut self.params, &self.state);
+            }
             Pane::CircuitEditor => {
-                self.needs_rebuild |= self.editor.show_circuit_editor(ui, &mut self.params, &self.state);
-            },
+                self.needs_rebuild |=
+                    self.editor
+                        .show_circuit_editor(ui, &mut self.params, &self.state);
+            }
             Pane::FdtdEditor => {
-                self.needs_rebuild |= self.editor.show_fdtd_editor(ui, &mut self.params, &self.state);
-            },
+                self.needs_rebuild |=
+                    self.editor
+                        .show_fdtd_editor(ui, &mut self.params, &self.state);
+            }
         }
 
         egui_tiles::UiResponse::None
     }
 }
-

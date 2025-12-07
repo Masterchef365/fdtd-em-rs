@@ -3,7 +3,11 @@ use egui::{DragValue, SidePanel, TopBottomPanel, Ui};
 use ndarray::Array4;
 
 use crate::{
-    field_vis::GridVisualizationConfig, node_map::NodeMap, sim::{FdtdSim, FdtdSimConfig}, streamers::{Streamers, StreamersMode}, wire_editor_3d::{WireEditor3D, Wiring3D}
+    field_vis::GridVisualizationConfig,
+    node_map::NodeMap,
+    sim::{FdtdSim, FdtdSimConfig},
+    streamers::{Streamers, StreamersMode},
+    wire_editor_3d::{WireEditor3D, Wiring3D},
 };
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -120,7 +124,8 @@ impl FdtdEditor {
 
                     self.grid_vis.draw(&sim, paint);
 
-                    self.wire_editor_3d.draw_current(thr, wires, nodemap, soln, sim.width());
+                    self.wire_editor_3d
+                        .draw_current(thr, wires, nodemap, soln, sim.width());
                     rebuild_sim |= self.wire_editor_3d.edit(sim.width(), thr, wires);
                 });
         });

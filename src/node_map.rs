@@ -19,7 +19,6 @@ use crate::{
     wire_editor_3d::{WireEditor3D, WireId, Wiring3D},
 };
 
-
 pub struct NodeMap {
     pub pos_map: HashMap<IntPos3, usize>,
     pub component_idx_map: HashMap<WireId, usize>,
