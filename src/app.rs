@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use cirmcut::{
     circuit_widget::{Diagram, DiagramState, RichPrimitiveDiagram},
     cirmcut_sim::{
+        PrimitiveDiagram, SimOutputs,
         map::PrimitiveDiagramMapping,
         solver::{Solver, SolverConfig},
-        PrimitiveDiagram, SimOutputs,
     },
 };
 use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};

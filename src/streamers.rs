@@ -52,6 +52,12 @@ impl Streamers {
             StreamersMode::EField => true,
         };
 
+        let color = if is_efield {
+            Color32::YELLOW
+        } else {
+            Color32::RED
+        };
+
         let mut rng = rand::thread_rng();
         for point in &mut self.points {
             let width = sim.width();
@@ -75,7 +81,7 @@ impl Streamers {
 
             *point += field * dt;
 
-            let stroke = Stroke::new(1., Color32::WHITE);
+            let stroke = Stroke::new(1., color);
             screenspace_arrow(
                 paint,
                 espace(sim.width(), before),

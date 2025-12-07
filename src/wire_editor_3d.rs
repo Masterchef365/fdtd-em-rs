@@ -8,8 +8,7 @@ use crate::{
     sim::FdtdSim,
 };
 
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone, Copy)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Copy)]
 pub struct Wire {
     /// Ohms
     pub resistance: f64,
@@ -17,14 +16,12 @@ pub struct Wire {
 
 const DEFAULT_WIRE: Wire = Wire { resistance: 1e-3 };
 
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Port(pub String);
 
 pub type WireId = (IntPos3, IntPos3);
 
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(Default, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Default, Clone)]
 pub struct Wiring3D {
     pub wires: HashMap<WireId, Wire>,
     pub ports: HashMap<IntPos3, Port>,
