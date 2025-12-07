@@ -151,14 +151,14 @@ impl FdtdApp {
             self.state.fdtd.step(&self.params.fdtd_config, &magnetization, &elec);
 
             // Copy the fdtd e-field into the soln vector
-            // TODO: SET THIS BACK TO THE MEASURED E FIELD
-            readback_efield(self.state.fdtd.e_field(), &self.state.nodemap, &self.params.fdtd_wiring, &mut self.state.circuit_solver);
+            let external_params = readback_efield(self.state.fdtd.e_field(), &self.state.nodemap, &self.params.fdtd_wiring, &self.state.circuit_solver);
 
             // Step circuit
             self.state.circuit_solver.step(
                 self.controls.dt,
                 &self.state.primitive_diagram,
                 &self.params.circuit_solver_cfg,
+                Some(&external_params),
             )?;
 
             self.state.outputs = self
@@ -392,7 +392,10 @@ fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, widt
     field
 }
 
-fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &mut Solver) {
+fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &Solver) -> Vec<f64> {
+    let n = outs.map().vector_size();
+    let mut external_params = vec![0_f64; n];
+
     for wire_id @ (a, b) in wiring.wires.keys() {
         let (x, y, z) = *a;
         let (bx, by, bz) = *b;
@@ -410,6 +413,9 @@ fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, ou
         let component_idx = nodemap.component_idx_map.get(wire_id).unwrap();
         let soln_vec_idx = outs.map.state_map.voltage_drops().nth(*component_idx).unwrap();
 
-        outs.soln_vector[soln_vec_idx] = voltage_drop;
+        //outs.soln_vector[soln_vec_idx] = dbg!(voltage_drop);
+        external_params[soln_vec_idx] = voltage_drop;
     }
+
+    external_params
 }
