@@ -137,48 +137,6 @@ impl eframe::App for FdtdApp {
         } else {
             self.behavior.error_shown = None;
         }
-
-        /*
-        SidePanel::left("cfg").show(ctx, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.heading("Common");
-                needs_rebuild |= self.controls.show_ui(ui);
-
-                if ui.button("Reset everything").clicked() {
-                    self.params = SimulationParameters::default();
-                    needs_rebuild = true;
-                }
-
-                if let Some(error) = &self.error_shown {
-                    ui.label(RichText::new(error).color(Color32::RED));
-                }
-
-                ui.separator();
-                needs_rebuild |= self.editor.show_cfg(ui, &mut self.params, &self.state);
-                ui.separator();
-            });
-        });
-
-        SidePanel::right("circuit").show(ctx, |ui| {
-            needs_rebuild |= self
-                .editor
-                .show_circuit_editor(ui, &mut self.params, &self.state);
-        });
-
-        CentralPanel::default().show(ctx, |ui| {
-            needs_rebuild |= self
-                .editor
-                .show_fdtd_editor(ui, &mut self.params, &self.state);
-        });
-
-        let ret = self.step(needs_rebuild);
-
-        if let Err(e) = ret {
-            self.error_shown = Some(e);
-        } else {
-            self.error_shown = None;
-        }
-        */
     }
 }
 
@@ -466,13 +424,15 @@ fn readback_efield(
 fn create_tree() -> egui_tiles::Tree<Pane> {
     let mut tiles = egui_tiles::Tiles::default();
 
-    let mut tabs = vec![];
-    tabs.push({
-        let children: Vec<_> = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].into_iter().map(|pane| tiles.insert_pane(pane)).collect();
-        tiles.insert_horizontal_tile(children)
-    });
+    //let [common, fdtd, circuit, fdtd_cfg, cricuit_cfg] = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].map(|pane| tiles.insert_tab_tile(vec![tiles.insert_pane(pane)]));
+    let [common, fdtd, circuit, fdtd_cfg, circuit_cfg] = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].map(|pane| tiles.insert_pane(pane));
 
-    let root = tiles.insert_tab_tile(tabs);
+    let left_bar = tiles.insert_vertical_tile(vec![common, fdtd_cfg]);
+    let left = tiles.insert_horizontal_tile(vec![left_bar, fdtd]);
+
+    let right = tiles.insert_horizontal_tile(vec![circuit_cfg, circuit]);
+
+    let root = tiles.insert_horizontal_tile(vec![left, right]);
 
     egui_tiles::Tree::new("my_tree", root, tiles)
 }
@@ -480,6 +440,10 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
 impl egui_tiles::Behavior<Pane> for TreeBehavior {
     fn tab_title_for_pane(&mut self, pane: &Pane) -> egui::WidgetText {
         pane.name().into()
+    }
+
+    fn simplification_options(&self) -> egui_tiles::SimplificationOptions {
+        egui_tiles::SimplificationOptions { all_panes_must_have_tabs: true, ..Default::default() }
     }
 
     fn pane_ui(
