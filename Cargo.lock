@@ -691,6 +691,7 @@ dependencies = [
 [[package]]
 name = "cirmcut"
 version = "0.1.0"
+source = "git+https://github.com/Masterchef365/cirmcut.git?branch=ports#f8a9a8cc00119fd7303df6bc9d2be9c270b53b83"
 dependencies = [
  "cirmcut-sim",
  "eframe",
@@ -707,6 +708,7 @@ dependencies = [
 [[package]]
 name = "cirmcut-sim"
 version = "0.1.0"
+source = "git+https://github.com/Masterchef365/cirmcut.git?branch=ports#f8a9a8cc00119fd7303df6bc9d2be9c270b53b83"
 dependencies = [
  "rsparse",
  "serde",
