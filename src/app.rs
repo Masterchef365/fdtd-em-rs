@@ -156,10 +156,10 @@ impl FdtdApp {
             // Create E field from wires
             let width = self.state.fdtd.width();
             let elec = generate_efield(
+                &mut self.state.fdtd,
                 &self.state.nodemap,
                 &self.params.fdtd_wiring,
                 &self.state.outputs,
-                self.state.fdtd.width(),
             );
             let magnetization = Array4::<f64>::zeros((width, width, width, 3));
 
@@ -408,12 +408,13 @@ impl NodeMap {
 }
 
 fn generate_efield(
+    fdtd: &mut FdtdSim,
     nodemap: &NodeMap,
     wiring: &Wiring3D,
     outs: &SimOutputs,
-    width: usize,
 ) -> Array4<f64> {
-    let mut field = Array4::<f64>::zeros((width, width, width, 3));
+    let width = fdtd.width();
+    let mut external_field = Array4::<f64>::zeros((width, width, width, 3));
 
     for (a, b) in wiring.wires.keys() {
         let (x, y, z) = *a;
@@ -425,16 +426,20 @@ fn generate_efield(
         let b_idx = nodemap.pos_map[b];
         let dv = outs.voltages[b_idx] - outs.voltages[a_idx];
 
-        if bx > x {
-            field[(x, y, z, 0)] = dv;
+        let dim = if bx > x {
+            0
         } else if by > y {
-            field[(x, y, z, 1)] = dv;
+            1
         } else {
-            field[(x, y, z, 2)] = dv;
-        }
+            2
+        };
+
+        let coord = (x, y, z, dim);
+        external_field[coord] = dv;
+        fdtd.e_field[coord] = 0.0;
     }
 
-    field
+    external_field
 }
 
 fn readback_efield(
