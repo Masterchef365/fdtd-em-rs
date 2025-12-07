@@ -1,12 +1,11 @@
-
 use cirmcut::{
     circuit_widget::{Diagram, DiagramState},
     cirmcut_sim::{
-        PrimitiveDiagram, SimOutputs,
         solver::{Solver, SolverConfig},
+        PrimitiveDiagram, SimOutputs,
     },
 };
-use egui::{CentralPanel, Color32, RichText, Ui};
+use egui::{CentralPanel, Color32, RichText, ScrollArea, Ui};
 use ndarray::Array4;
 
 use crate::{
@@ -463,22 +462,29 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     ) -> egui_tiles::UiResponse {
         match pane {
             Pane::CommonCfg => {
-                self.needs_rebuild |= self.controls.show_ui(ui);
-                if ui.button("Reset everything").clicked() {
-                    self.params = SimulationParameters::default();
-                    self.needs_rebuild = true;
-                }
-                if let Some(error) = &self.error_shown {
-                    ui.label(RichText::new(error).color(Color32::RED));
-                }
+                ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
+                    self.needs_rebuild |= self.controls.show_ui(ui);
+                    if ui.button("Reset everything").clicked() {
+                        self.params = SimulationParameters::default();
+                        self.needs_rebuild = true;
+                    }
+                    if let Some(error) = &self.error_shown {
+                        ui.label(RichText::new(error).color(Color32::RED));
+                    }
+                });
             }
             Pane::FdtdEditorCfg => {
-                self.needs_rebuild |= self.editor.show_fdtd_cfg(ui, &mut self.params, &self.state);
+                ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
+                    self.needs_rebuild |=
+                        self.editor.show_fdtd_cfg(ui, &mut self.params, &self.state);
+                });
             }
             Pane::CircuitEditorCfg => {
-                self.needs_rebuild |=
-                    self.editor
-                        .show_circuit_cfg(ui, &mut self.params, &self.state);
+                ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
+                    self.needs_rebuild |=
+                        self.editor
+                            .show_circuit_cfg(ui, &mut self.params, &self.state);
+                });
             }
             Pane::CircuitEditor => {
                 self.needs_rebuild |=
