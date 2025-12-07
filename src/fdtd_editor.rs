@@ -30,26 +30,11 @@ impl FdtdEditor {
             streamer_step: 0.01,
 
             grid_vis: GridVisualizationConfig::default(),
-            /*
-            sim_cfg: FdtdSimConfig {
-                dx: 1.,
-                dt: 0.005,
-                mu: 1.,
-                eps: 1.,
-            },
-            */
         }
     }
 }
 
 impl FdtdEditor {
-    /*
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-    */
-
     /// Returns true if the change would require an external update
     pub fn show_cfg(
         &mut self,
@@ -98,7 +83,6 @@ impl FdtdEditor {
         &mut self,
         ui: &mut Ui,
         sim: &FdtdSim,
-        cfg: &mut FdtdSimConfig,
         wires: &mut Wiring3D,
         nodemap: &NodeMap,
         soln: &SimOutputs,

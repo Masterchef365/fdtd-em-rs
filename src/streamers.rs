@@ -1,5 +1,5 @@
 use egui::{Color32, Stroke};
-use rand::{Rng, prelude::Distribution};
+use rand::Rng;
 use threegui::{Painter3D, Vec3};
 
 use crate::{

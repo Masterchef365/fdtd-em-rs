@@ -1,6 +1,5 @@
 use egui::Stroke;
 use ndarray::Array4;
-use rand::prelude::Distribution;
 use threegui::{Painter3D, Vec3};
 
 pub type IntPos3 = (usize, usize, usize);

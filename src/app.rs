@@ -275,7 +275,6 @@ impl SimulationEditor {
         self.fdtd.show_editor(
             ui,
             &state.fdtd,
-            &mut params.fdtd_config,
             &mut params.fdtd_wiring,
             &state.nodemap,
             &state.outputs,

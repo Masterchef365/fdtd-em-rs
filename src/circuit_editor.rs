@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use cirmcut::cirmcut_sim::{
     ThreeTerminalComponent, TwoTerminalComponent,
     solver::{SolverConfig, SolverMode},
@@ -17,7 +15,6 @@ pub struct CircuitEditor {
     view_rect: Rect,
     editor: DiagramEditor,
     debug_draw: bool,
-    current_path: Option<PathBuf>,
 
     vis_opt: VisualizationOptions,
     error: Option<String>,
@@ -40,7 +37,6 @@ impl Default for CircuitEditor {
             editor: DiagramEditor::new(),
             view_rect: Rect::from_center_size(Pos2::ZERO, Vec2::splat(1000.0)),
             debug_draw: false,
-            current_path: None,
         }
     }
 }
@@ -55,10 +51,6 @@ impl CircuitEditor {
         state: &DiagramState,
     ) -> bool {
         let mut rebuild_sim = false;
-
-        let single_step = false;
-
-        rebuild_sim |= ui.button("Reset").clicked();
 
         /*
         ui.add(
