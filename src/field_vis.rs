@@ -71,7 +71,7 @@ impl GridVisualizationConfig {
         }
 
         if self.show_minimal_grid {
-            draw_minimal_grid(paint, sim.width(), Color32::LIGHT_GRAY);
+            draw_minimal_grid(paint, sim.width(), Color32::GRAY);
         }
 
         let e_color = Stroke::new(1., Color32::YELLOW);
@@ -125,7 +125,7 @@ fn draw_minimal_grid(paint: &Painter3D, width: usize, color: Color32) {
     for i in 0..width {
         for j in 0..width {
             for k in 0..width {
-                paint.circle_filled(espacet(width, (i, j, k)), 1.0, color);
+                paint.circle_filled(espacet(width, (i, j, k)), 2.0, color);
             }
         }
     }

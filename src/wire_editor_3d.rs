@@ -14,7 +14,7 @@ pub struct Wire {
     pub resistance: f64,
 }
 
-const DEFAULT_WIRE: Wire = Wire { resistance: 1e-3 };
+const DEFAULT_WIRE: Wire = Wire { resistance: 1.0 };
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Port(pub String);

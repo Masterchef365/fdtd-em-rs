@@ -105,6 +105,11 @@ impl eframe::App for FdtdApp {
                 ui.heading("Common");
                 needs_rebuild |= self.controls.show_ui(ui);
 
+                if ui.button("Reset everything").clicked() {
+                    self.params = SimulationParameters::default();
+                    needs_rebuild = true;
+                }
+
                 if let Some(error) = &self.error_shown {
                     ui.label(RichText::new(error).color(Color32::RED));
                 }
@@ -463,7 +468,6 @@ fn readback_efield(
             .nth(*component_idx)
             .unwrap();
 
-        //outs.soln_vector[soln_vec_idx] = dbg!(voltage_drop);
         external_params[soln_vec_idx] = -voltage_drop;
     }
 
