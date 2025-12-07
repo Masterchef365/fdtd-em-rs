@@ -143,6 +143,10 @@ impl FdtdApp {
             self.state = SimulationState::new(&self.params);
         }
 
+        // Unconditionally rebuild the primitive diagram from the diagram;
+        // this allows operating the switches at runtime.
+        self.state.rewire(&self.params);
+
         if self.controls.do_step() || needs_rebuild {
             // Create E field from wires
             let width = self.state.fdtd.width();
@@ -206,6 +210,13 @@ impl SimulationState {
             nodemap,
             outputs,
         }
+    }
+
+    fn rewire(&mut self, params: &SimulationParameters) {
+        let mut rich = params.circuit_diagram.to_primitive_diagram();
+
+        self.nodemap = NodeMap::new(&mut rich, &params.fdtd_wiring);
+        self.primitive_diagram = rich.primitive;
     }
 }
 
@@ -453,7 +464,7 @@ fn readback_efield(
             .unwrap();
 
         //outs.soln_vector[soln_vec_idx] = dbg!(voltage_drop);
-        external_params[soln_vec_idx] = voltage_drop;
+        external_params[soln_vec_idx] = -voltage_drop;
     }
 
     external_params
