@@ -2,12 +2,11 @@ use std::collections::HashMap;
 
 use cirmcut::cirmcut_sim::SimOutputs;
 use egui::{Color32, DragValue, Pos2, Stroke, Ui, Vec2};
-use threegui::{Painter3D, ThreeUi, Vec3};
+use threegui::{Painter3D, ThreeUi};
 
 use crate::{
     common::{IntPos3, espacet},
     node_map::NodeMap,
-    sim::FdtdSim,
 };
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Copy)]

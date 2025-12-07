@@ -1,23 +1,20 @@
-use std::collections::HashMap;
 
 use cirmcut::{
-    circuit_widget::{Diagram, DiagramState, RichPrimitiveDiagram},
+    circuit_widget::{Diagram, DiagramState},
     cirmcut_sim::{
         PrimitiveDiagram, SimOutputs,
-        map::PrimitiveDiagramMapping,
         solver::{Solver, SolverConfig},
     },
 };
-use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
+use egui::{CentralPanel, Color32, RichText, Ui};
 use ndarray::Array4;
 
 use crate::{
     circuit_editor::CircuitEditor,
-    common::IntPos3,
     fdtd_editor::FdtdEditor,
     node_map::NodeMap,
     sim::{FdtdSim, FdtdSimConfig},
-    wire_editor_3d::{WireEditor3D, WireId, Wiring3D},
+    wire_editor_3d::Wiring3D,
 };
 
 #[derive(Clone, Copy)]

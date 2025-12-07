@@ -1,6 +1,5 @@
 use cirmcut::cirmcut_sim::SimOutputs;
-use egui::{DragValue, SidePanel, TopBottomPanel, Ui};
-use ndarray::Array4;
+use egui::{DragValue, Ui};
 
 use crate::{
     field_vis::GridVisualizationConfig,

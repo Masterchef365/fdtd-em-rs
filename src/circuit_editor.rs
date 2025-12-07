@@ -1,19 +1,15 @@
-use std::{
-    ffi::OsStr,
-    fs::File,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
 use cirmcut::cirmcut_sim::{
-    PrimitiveDiagram, SimOutputs, ThreeTerminalComponent, TwoTerminalComponent,
-    solver::{Solver, SolverConfig, SolverMode},
+    ThreeTerminalComponent, TwoTerminalComponent,
+    solver::{SolverConfig, SolverMode},
 };
 use egui::{
-    Color32, DragValue, Key, Layout, Pos2, Rect, RichText, ScrollArea, Ui, Vec2, ViewportCommand,
+    Color32, DragValue, Key, Pos2, Rect, RichText, Ui, Vec2,
 };
 
 use cirmcut::circuit_widget::{
-    Diagram, DiagramEditor, DiagramState, DiagramWireState, VisualizationOptions, draw_grid,
+    Diagram, DiagramEditor, DiagramState, VisualizationOptions, draw_grid,
     egui_to_cellpos,
 };
 
@@ -60,7 +56,7 @@ impl CircuitEditor {
     ) -> bool {
         let mut rebuild_sim = false;
 
-        let mut single_step = false;
+        let single_step = false;
 
         rebuild_sim |= ui.button("Reset").clicked();
 
