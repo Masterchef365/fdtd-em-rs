@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
+use cirmcut::cirmcut_sim::SimOutputs;
 use egui::{Color32, DragValue, Pos2, Stroke, Ui, Vec2};
 use threegui::{Painter3D, ThreeUi, Vec3};
 
 use crate::{
-    common::{IntPos3, espacet},
-    sim::FdtdSim,
+    common::{espacet, IntPos3}, node_map::NodeMap, sim::FdtdSim
 };
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Copy)]
@@ -190,6 +190,42 @@ impl WireEditor3D {
 
         return false;
     }
+
+    pub fn draw_current(&mut self, 
+        thr: &ThreeUi, 
+        wiring: &mut Wiring3D,
+        nodemap: &NodeMap,
+        soln: &SimOutputs,
+        width: usize,
+        ) {
+        let time = thr.painter().egui().ctx().input(|r| r.time);
+        for wire_id in wiring.wires.keys() {
+            let component_idx = nodemap.component_idx_map[wire_id];
+            let current = soln.two_terminal_current[component_idx];
+
+            let (a, b) = *wire_id;
+            let a_pos = espacet(width, a);
+            let b_pos = espacet(width, b);
+
+            let n = 5;
+            for i in 0..n {
+                let pos = (time * current.abs()).fract();
+                let mut t = (i as f32 + pos as f32) / n as f32;
+                if current < 0.0 {
+                    t = 1.0 - t;
+                }
+
+                let center = a_pos.lerp(b_pos, t.fract());
+                let Some(center2d) = thr.painter().transform(center) else { continue; };
+
+                let size = Vec2::splat(6.0);
+                let rect = egui::Rect::from_center_size(center2d, size);
+
+                thr.painter().egui().rect_filled(rect, 0.0, Color32::YELLOW);
+            }
+        }
+    }
+
 
     pub fn show_ui(&mut self, ui: &mut Ui, width: usize, wiring: &mut Wiring3D) -> bool {
         let mut rebuild_sim = false;

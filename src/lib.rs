@@ -9,3 +9,4 @@ pub mod field_vis;
 pub mod sim;
 pub mod streamers;
 pub mod wire_editor_3d;
+pub mod node_map;
