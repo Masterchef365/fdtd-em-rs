@@ -15,39 +15,35 @@ use crate::{
     circuit_editor::CircuitEditor, common::IntPos3, fdtd_editor::FdtdEditor, node_map::NodeMap, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, WireId, Wiring3D}
 };
 
-struct Pane {
-    nr: usize,
+#[derive(Clone, Copy)]
+enum Pane {
+    CircuitEditor,
+    CircuitEditorCfg,
+    FdtdEditor,
+    FdtdEditorCfg,
+    CommonCfg,
 }
 
-struct TreeBehavior {}
-
-impl egui_tiles::Behavior<Pane> for TreeBehavior {
-    fn tab_title_for_pane(&mut self, pane: &Pane) -> egui::WidgetText {
-        format!("Pane {}", pane.nr).into()
-    }
-
-    fn pane_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        _tile_id: egui_tiles::TileId,
-        pane: &mut Pane,
-    ) -> egui_tiles::UiResponse {
-        // Give each pane a unique color:
-        let color = egui::epaint::Hsva::new(0.103 * pane.nr as f32, 0.5, 0.5, 1.0);
-        ui.painter().rect_filled(ui.max_rect(), 0.0, color);
-
-        ui.label(format!("The contents of pane {}.", pane.nr));
-
-        // You can make your pane draggable like so:
-        if ui
-            .add(egui::Button::new("Drag me!").sense(egui::Sense::drag()))
-            .drag_started()
-        {
-            egui_tiles::UiResponse::DragStarted
-        } else {
-            egui_tiles::UiResponse::None
+impl Pane {
+    fn name(&self) -> &'static str {
+        match self {
+            Pane::CommonCfg => "common",
+            Pane::CircuitEditor => "Circuit simulation",
+            Pane::CircuitEditorCfg => "Circuit configuration",
+            Pane::FdtdEditor => "FDTD simulation",
+            Pane::FdtdEditorCfg => "FDTD configuration",
         }
     }
+}
+
+struct TreeBehavior { 
+    params: SimulationParameters,
+    state: SimulationState,
+    controls: SimulationControls,
+    editor: SimulationEditor,
+    /// Any error information from the simulation step is stored here.
+    error_shown: Option<String>,
+    needs_rebuild: bool,
 }
 
 /// Every parameter needed for a simulation to proceed, including
@@ -90,13 +86,7 @@ pub struct SimulationEditor {
 /// Application
 pub struct FdtdApp {
     tree: egui_tiles::Tree<Pane>,
-
-    params: SimulationParameters,
-    state: SimulationState,
-    controls: SimulationControls,
-    editor: SimulationEditor,
-    /// Any error information from the simulation step is stored here.
-    error_shown: Option<String>,
+    behavior: TreeBehavior,
 }
 
 impl FdtdApp {
@@ -111,20 +101,25 @@ impl FdtdApp {
         let error_shown = None;
         let editor = SimulationEditor::new(&params);
 
-        Self {
-            tree: create_tree(),
+        let behavior = TreeBehavior {
             params,
             state,
             controls,
             editor,
             error_shown,
+            needs_rebuild: false,
+        };
+
+        Self {
+            tree: create_tree(),
+            behavior,
         }
     }
 }
 
 impl eframe::App for FdtdApp {
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, &self.params);
+        eframe::set_value(storage, eframe::APP_KEY, &self.behavior.params);
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -132,13 +127,18 @@ impl eframe::App for FdtdApp {
         ctx.request_repaint();
         //}
 
-        let mut needs_rebuild = false;
-
         CentralPanel::default().show(ctx, |ui| {
-            self.tree.ui(&mut TreeBehavior {}, ui);
+            self.tree.ui(&mut self.behavior, ui);
         });
-        return;
 
+        let ret = self.behavior.step();
+        if let Err(e) = ret {
+            self.behavior.error_shown = Some(e);
+        } else {
+            self.behavior.error_shown = None;
+        }
+
+        /*
         SidePanel::left("cfg").show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.heading("Common");
@@ -178,20 +178,23 @@ impl eframe::App for FdtdApp {
         } else {
             self.error_shown = None;
         }
+        */
     }
 }
 
-impl FdtdApp {
-    fn step(&mut self, needs_rebuild: bool) -> Result<(), String> {
-        if needs_rebuild {
+impl TreeBehavior {
+    fn step(&mut self) -> Result<(), String> {
+        let do_rebuild = self.needs_rebuild;
+        if do_rebuild {
             self.state = SimulationState::new(&self.params);
+            self.needs_rebuild = false;
         }
 
         // Unconditionally rebuild the primitive diagram from the diagram;
         // this allows operating the switches at runtime.
         self.state.rewire(&self.params);
 
-        if self.controls.do_step() || needs_rebuild {
+        if self.controls.do_step() || do_rebuild {
             // Create E field from wires
             let width = self.state.fdtd.width();
             let elec = generate_efield(
@@ -265,31 +268,32 @@ impl SimulationState {
 }
 
 impl SimulationEditor {
-    pub fn show_cfg(
+    pub fn show_circuit_cfg(
         &mut self,
         ui: &mut Ui,
         params: &mut SimulationParameters,
         state: &SimulationState,
     ) -> bool {
-        let mut needs_rebuild = false;
-
-        ui.heading("Circuit");
-        needs_rebuild |= self.circuit.show_cfg(
+        self.circuit.show_cfg(
             ui,
             &mut params.circuit_diagram,
             &mut params.circuit_solver_cfg,
             &state.diagram_state,
-        );
-        ui.separator();
-        ui.heading("FDTD");
-        needs_rebuild |= self.fdtd.show_cfg(
+        )
+    }
+
+    pub fn show_fdtd_cfg(
+        &mut self,
+        ui: &mut Ui,
+        params: &mut SimulationParameters,
+        state: &SimulationState,
+    ) -> bool {
+        self.fdtd.show_cfg(
             ui,
             &state.fdtd,
             &mut params.fdtd_config,
             &mut params.fdtd_wiring,
-        );
-
-        needs_rebuild
+        )
     }
 
     pub fn show_circuit_editor(
@@ -460,27 +464,57 @@ fn readback_efield(
 }
 
 fn create_tree() -> egui_tiles::Tree<Pane> {
-    let mut next_view_nr = 0;
-    let mut gen_pane = || {
-        let pane = Pane { nr: next_view_nr };
-        next_view_nr += 1;
-        pane
-    };
-
     let mut tiles = egui_tiles::Tiles::default();
 
     let mut tabs = vec![];
     tabs.push({
-        let children = (0..7).map(|_| tiles.insert_pane(gen_pane())).collect();
+        let children: Vec<_> = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].into_iter().map(|pane| tiles.insert_pane(pane)).collect();
         tiles.insert_horizontal_tile(children)
     });
-    tabs.push({
-        let cells = (0..11).map(|_| tiles.insert_pane(gen_pane())).collect();
-        tiles.insert_grid_tile(cells)
-    });
-    tabs.push(tiles.insert_pane(gen_pane()));
 
     let root = tiles.insert_tab_tile(tabs);
 
     egui_tiles::Tree::new("my_tree", root, tiles)
 }
+
+impl egui_tiles::Behavior<Pane> for TreeBehavior {
+    fn tab_title_for_pane(&mut self, pane: &Pane) -> egui::WidgetText {
+        pane.name().into()
+    }
+
+    fn pane_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        _tile_id: egui_tiles::TileId,
+        pane: &mut Pane,
+    ) -> egui_tiles::UiResponse {
+
+        match pane {
+            Pane::CommonCfg => {
+                self.needs_rebuild |= self.controls.show_ui(ui);
+                if ui.button("Reset everything").clicked() {
+                    self.params = SimulationParameters::default();
+                    self.needs_rebuild = true;
+                }
+                if let Some(error) = &self.error_shown {
+                    ui.label(RichText::new(error).color(Color32::RED));
+                }
+            },
+            Pane::FdtdEditorCfg => {
+                self.needs_rebuild |= self.editor.show_fdtd_cfg(ui, &mut self.params, &self.state);
+            },
+            Pane::CircuitEditorCfg => {
+                self.needs_rebuild |= self.editor.show_circuit_cfg(ui, &mut self.params, &self.state);
+            },
+            Pane::CircuitEditor => {
+                self.needs_rebuild |= self.editor.show_circuit_editor(ui, &mut self.params, &self.state);
+            },
+            Pane::FdtdEditor => {
+                self.needs_rebuild |= self.editor.show_fdtd_editor(ui, &mut self.params, &self.state);
+            },
+        }
+
+        egui_tiles::UiResponse::None
+    }
+}
+
