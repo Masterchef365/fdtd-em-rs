@@ -3,14 +3,20 @@ use std::collections::HashMap;
 use cirmcut::{
     circuit_widget::{Diagram, DiagramState, RichPrimitiveDiagram},
     cirmcut_sim::{
-        map::PrimitiveDiagramMapping, solver::{Solver, SolverConfig}, PrimitiveDiagram, SimOutputs
+        map::PrimitiveDiagramMapping,
+        solver::{Solver, SolverConfig},
+        PrimitiveDiagram, SimOutputs,
     },
 };
 use egui::{CentralPanel, Color32, RichText, SidePanel, Ui};
 use ndarray::Array4;
 
 use crate::{
-    circuit_editor::CircuitEditor, common::IntPos3, fdtd_editor::FdtdEditor, sim::{FdtdSim, FdtdSimConfig}, wire_editor_3d::{WireEditor3D, WireId, Wiring3D}
+    circuit_editor::CircuitEditor,
+    common::IntPos3,
+    fdtd_editor::FdtdEditor,
+    sim::{FdtdSim, FdtdSimConfig},
+    wire_editor_3d::{WireEditor3D, WireId, Wiring3D},
 };
 
 /// Every parameter needed for a simulation to proceed, including
@@ -60,29 +66,25 @@ pub struct FdtdApp {
     error_shown: Option<String>,
 }
 
-impl Default for FdtdApp {
-    fn default() -> Self {
-        let params = SimulationParameters::default();
-        let state = SimulationState::new(&params);
-        Self {
-            controls: Default::default(),
-            editor: SimulationEditor::new(&params),
-            error_shown: None,
-            state,
-            params,
-        }
-    }
-}
-
 impl FdtdApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        let mut state = Self::default();
+        let params: SimulationParameters = cc
+            .storage
+            .and_then(|storage| eframe::get_value(storage, eframe::APP_KEY))
+            .unwrap_or_default();
 
-        if let Some(storage) = cc.storage {
-            state.params = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        let state = SimulationState::new(&params);
+        let controls = SimulationControls::default();
+        let error_shown = None;
+        let editor = SimulationEditor::new(&params);
+
+        Self {
+            params,
+            state,
+            controls,
+            editor,
+            error_shown,
         }
-
-        state
     }
 }
 
@@ -92,9 +94,9 @@ impl eframe::App for FdtdApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if self.controls.is_step_this_frame() {
-            ctx.request_repaint();
-        }
+        //if self.controls.is_step_this_frame() {
+        ctx.request_repaint();
+        //}
 
         let mut needs_rebuild = false;
 
@@ -142,16 +144,28 @@ impl FdtdApp {
         }
 
         if self.controls.do_step() || needs_rebuild {
-            // Create E field from wires 
+            // Create E field from wires
             let width = self.state.fdtd.width();
-            let elec = generate_efield(&self.state.nodemap, &self.params.fdtd_wiring, &self.state.outputs, self.state.fdtd.width());
+            let elec = generate_efield(
+                &self.state.nodemap,
+                &self.params.fdtd_wiring,
+                &self.state.outputs,
+                self.state.fdtd.width(),
+            );
             let magnetization = Array4::<f64>::zeros((width, width, width, 3));
 
             // Step FDTD
-            self.state.fdtd.step(&self.params.fdtd_config, &magnetization, &elec);
+            self.state
+                .fdtd
+                .step(&self.params.fdtd_config, &magnetization, &elec);
 
             // Copy the fdtd e-field into the soln vector
-            let external_params = readback_efield(self.state.fdtd.e_field(), &self.state.nodemap, &self.params.fdtd_wiring, &self.state.circuit_solver);
+            let external_params = readback_efield(
+                self.state.fdtd.e_field(),
+                &self.state.nodemap,
+                &self.params.fdtd_wiring,
+                &self.state.circuit_solver,
+            );
 
             // Step circuit
             self.state.circuit_solver.step(
@@ -166,7 +180,8 @@ impl FdtdApp {
                 .circuit_solver
                 .state(&self.state.primitive_diagram);
 
-            self.state.diagram_state = DiagramState::new(&self.state.outputs, &self.state.primitive_diagram);
+            self.state.diagram_state =
+                DiagramState::new(&self.state.outputs, &self.state.primitive_diagram);
         }
 
         Ok(())
@@ -323,7 +338,11 @@ impl NodeMap {
     /// Inserts wires into the diagram, recording where nodes are
     fn new(rich: &mut RichPrimitiveDiagram, wiring: &Wiring3D) -> Self {
         // Helper function
-        fn nodemap_insert(map: &mut HashMap<IntPos3, usize>, pos: IntPos3, primitive_diagram: &mut PrimitiveDiagram) -> usize {
+        fn nodemap_insert(
+            map: &mut HashMap<IntPos3, usize>,
+            pos: IntPos3,
+            primitive_diagram: &mut PrimitiveDiagram,
+        ) -> usize {
             *map.entry(pos).or_insert_with(|| {
                 let idx = primitive_diagram.num_nodes;
                 primitive_diagram.num_nodes += 1;
@@ -339,14 +358,19 @@ impl NodeMap {
             let b_idx = nodemap_insert(&mut pos_map, *b, &mut rich.primitive);
             let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
             let component_idx = rich.primitive.two_terminal.len();
-            rich.primitive.two_terminal.push(([a_idx, b_idx], component));
+            rich.primitive
+                .two_terminal
+                .push(([a_idx, b_idx], component));
             component_idx_map.insert(*wire_id, component_idx);
         }
 
         // Ports
         for (pos, port) in &wiring.ports {
             if let Some(node_idx) = pos_map.get(&pos) {
-                rich.ports.entry(port.0.clone()).or_default().push(*node_idx);
+                rich.ports
+                    .entry(port.0.clone())
+                    .or_default()
+                    .push(*node_idx);
             }
         }
 
@@ -367,7 +391,12 @@ impl NodeMap {
     }
 }
 
-fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, width: usize) -> Array4<f64> {
+fn generate_efield(
+    nodemap: &NodeMap,
+    wiring: &Wiring3D,
+    outs: &SimOutputs,
+    width: usize,
+) -> Array4<f64> {
     let mut field = Array4::<f64>::zeros((width, width, width, 3));
 
     for (a, b) in wiring.wires.keys() {
@@ -392,7 +421,12 @@ fn generate_efield(nodemap: &NodeMap, wiring: &Wiring3D, outs: &SimOutputs, widt
     field
 }
 
-fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, outs: &Solver) -> Vec<f64> {
+fn readback_efield(
+    field: &Array4<f64>,
+    nodemap: &NodeMap,
+    wiring: &Wiring3D,
+    outs: &Solver,
+) -> Vec<f64> {
     let n = outs.map().vector_size();
     let mut external_params = vec![0_f64; n];
 
@@ -411,7 +445,12 @@ fn readback_efield(field: &Array4<f64>, nodemap: &NodeMap, wiring: &Wiring3D, ou
         };
 
         let component_idx = nodemap.component_idx_map.get(wire_id).unwrap();
-        let soln_vec_idx = outs.map.state_map.voltage_drops().nth(*component_idx).unwrap();
+        let soln_vec_idx = outs
+            .map
+            .state_map
+            .voltage_drops()
+            .nth(*component_idx)
+            .unwrap();
 
         //outs.soln_vector[soln_vec_idx] = dbg!(voltage_drop);
         external_params[soln_vec_idx] = voltage_drop;
