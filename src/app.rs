@@ -145,6 +145,11 @@ impl eframe::App for FdtdApp {
                         self.behavior.rebuild();
                     }
                 });
+                ui.menu_button("Layout", |ui| {
+                    if ui.button("Reset").clicked() {
+                        self.tree = create_tree();
+                    }
+                });
             });
         });
 
@@ -461,7 +466,7 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
 
     let right = tiles.insert_horizontal_tile(vec![circuit_cfg, circuit]);
 
-    let root = tiles.insert_horizontal_tile(vec![left, right]);
+    let root = tiles.insert_vertical_tile(vec![left, right]);
 
     egui_tiles::Tree::new("my_tree", root, tiles)
 }
