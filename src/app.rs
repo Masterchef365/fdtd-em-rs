@@ -153,10 +153,12 @@ impl eframe::App for FdtdApp {
                         self.behavior.rebuild();
                     }
                 });
-                ui.menu_button("Layout", |ui| {
-                    if ui.button("Reset").clicked() {
+                ui.menu_button("Preferences", |ui| {
+                    if ui.button("Reset layout").clicked() {
                         self.tree = create_tree();
                     }
+                    ui.separator();
+                    egui::widgets::global_theme_preference_switch(ui);
                 });
             });
         });
@@ -395,10 +397,13 @@ impl SimulationControls {
             ui.add(egui::DragValue::new(&mut self.dt).speed(1e-7).suffix(" s"));
         });
 
+        /*
         let text = if self.paused { "Play" } else { "Pause" };
         if ui.button(text).clicked() {
             self.paused = !self.paused;
         }
+        */
+        play_pause_button(ui, &mut self.paused);
 
         if ui.button("Single step").clicked() {
             self.single_step = true;
@@ -625,4 +630,26 @@ fn open_file() -> Option<SimulationParameters> {
         let params: SimulationParameters = ron::de::from_bytes(&bytes).unwrap();
         Some(params)
     })
+}
+
+fn play_pause_button(ui: &mut Ui, paused: &mut bool) {
+    let text = match *paused {
+        true => "   ▶   ",
+        false => "   ⏸   ",
+    };
+
+    let color = match *paused {
+        true => Color32::DARK_RED,
+        false => Color32::from_rgb(79, 200, 0),
+    };
+
+    let text = RichText::new(text).color(Color32::WHITE);
+
+    let button = egui::Button::new(text)
+        .fill(color)
+        .min_size(egui::Vec2::new(0.0, 40.0));
+
+    if ui.add(button).clicked() {
+        *paused = !*paused;
+    }
 }
