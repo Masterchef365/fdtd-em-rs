@@ -31,11 +31,13 @@ enum Pane {
 impl Pane {
     fn name(&self) -> &'static str {
         match self {
-            Pane::CommonCfg => "Common",
+            Pane::CommonCfg => "Controls",
+
             Pane::CircuitEditor => "Circuit simulation",
             Pane::CircuitEditorCfg => "Circuit configuration",
-            Pane::CircuitEditorEditComponent => "Edit Component",
-            Pane::CircuitEditorComponents => "Components",
+            Pane::CircuitEditorEditComponent => "Edit Circuit Component",
+            Pane::CircuitEditorComponents => "Add Circuit Component",
+
             Pane::FdtdEditor => "FDTD simulation",
             Pane::FdtdEditorCfg => "FDTD configuration",
             Pane::FdtdEditorEditComponent => "Edit FDTD component",
