@@ -20,19 +20,25 @@ use crate::{
 enum Pane {
     CircuitEditor,
     CircuitEditorCfg,
+    CircuitEditorComponents,
+    CircuitEditorEditComponent,
     FdtdEditor,
     FdtdEditorCfg,
+    FdtdEditorEditComponent,
     CommonCfg,
 }
 
 impl Pane {
     fn name(&self) -> &'static str {
         match self {
-            Pane::CommonCfg => "common",
+            Pane::CommonCfg => "Common",
             Pane::CircuitEditor => "Circuit simulation",
             Pane::CircuitEditorCfg => "Circuit configuration",
+            Pane::CircuitEditorEditComponent => "Edit Component",
+            Pane::CircuitEditorComponents => "Components",
             Pane::FdtdEditor => "FDTD simulation",
             Pane::FdtdEditorCfg => "FDTD configuration",
+            Pane::FdtdEditorEditComponent => "Edit FDTD component",
         }
     }
 }
@@ -270,6 +276,32 @@ impl SimulationEditor {
         )
     }
 
+    pub fn show_edit_circuit_component(
+        &mut self,
+        ui: &mut Ui,
+        params: &mut SimulationParameters,
+        state: &SimulationState,
+    ) -> bool {
+        self.circuit.show_edit_component(
+            ui,
+            &mut params.circuit_diagram,
+            &state.diagram_state,
+        )
+    }
+
+    pub fn show_circuit_components(
+        &mut self,
+        ui: &mut Ui,
+        params: &mut SimulationParameters,
+    ) -> bool {
+        ui.horizontal(|ui| {
+            self.circuit.show_components(
+                ui,
+                &mut params.circuit_diagram,
+            )
+        }).inner
+    }
+
     pub fn show_fdtd_cfg(
         &mut self,
         ui: &mut Ui,
@@ -278,11 +310,23 @@ impl SimulationEditor {
     ) -> bool {
         self.fdtd.show_cfg(
             ui,
-            &state.fdtd,
             &mut params.fdtd_config,
+        )
+    }
+
+    pub fn show_fdtd_edit_wire(
+        &mut self,
+        ui: &mut Ui,
+        params: &mut SimulationParameters,
+        state: &SimulationState,
+    ) -> bool {
+        self.fdtd.show_edit_wire(
+            ui,
+            &state.fdtd,
             &mut params.fdtd_wiring,
         )
     }
+
 
     pub fn show_circuit_editor(
         &mut self,
@@ -452,21 +496,25 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
     let mut tiles = egui_tiles::Tiles::default();
 
     //let [common, fdtd, circuit, fdtd_cfg, cricuit_cfg] = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].map(|pane| tiles.insert_tab_tile(vec![tiles.insert_pane(pane)]));
-    let [common, fdtd, circuit, fdtd_cfg, circuit_cfg] = [
+    let [common, circuit, circuit_cfg, circuit_components, circuit_edit_component, fdtd, fdtd_cfg, fdtd_component] = [
         Pane::CommonCfg,
-        Pane::FdtdEditor,
         Pane::CircuitEditor,
-        Pane::FdtdEditorCfg,
         Pane::CircuitEditorCfg,
+        Pane::CircuitEditorComponents,
+        Pane::CircuitEditorEditComponent,
+        Pane::FdtdEditor,
+        Pane::FdtdEditorCfg,
+        Pane::FdtdEditorEditComponent,
     ]
     .map(|pane| tiles.insert_pane(pane));
 
     let left_bar = tiles.insert_vertical_tile(vec![common, fdtd_cfg]);
-    let left = tiles.insert_horizontal_tile(vec![left_bar, fdtd]);
+    let fdtdstuff = tiles.insert_horizontal_tile(vec![left_bar, fdtd, fdtd_component]);
 
-    let right = tiles.insert_horizontal_tile(vec![circuit_cfg, circuit]);
+    let circuithoriz = tiles.insert_horizontal_tile(vec![circuit_cfg, circuit, circuit_edit_component]);
+    let circuitstuff = tiles.insert_vertical_tile(vec![circuithoriz, circuit_components]);
 
-    let root = tiles.insert_vertical_tile(vec![left, right]);
+    let root = tiles.insert_vertical_tile(vec![fdtdstuff, circuitstuff]);
 
     egui_tiles::Tree::new("my_tree", root, tiles)
 }
@@ -500,17 +548,25 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                     }
                 });
             }
-            Pane::FdtdEditorCfg => {
-                ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
-                    self.needs_rebuild |=
-                        self.editor.show_fdtd_cfg(ui, &mut self.params, &self.state);
-                });
-            }
             Pane::CircuitEditorCfg => {
                 ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
                     self.needs_rebuild |=
                         self.editor
                             .show_circuit_cfg(ui, &mut self.params, &self.state);
+                });
+            }
+            Pane::CircuitEditorComponents => {
+                ScrollArea::horizontal().id_salt(pane.name()).show(ui, |ui| {
+                    self.needs_rebuild |=
+                        self.editor
+                            .show_circuit_components(ui, &mut self.params);
+                });
+            }
+            Pane::CircuitEditorEditComponent => {
+                ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
+                    self.needs_rebuild |=
+                        self.editor
+                            .show_edit_circuit_component(ui, &mut self.params, &self.state);
                 });
             }
             Pane::CircuitEditor => {
@@ -522,7 +578,19 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                 self.needs_rebuild |=
                     self.editor
                         .show_fdtd_editor(ui, &mut self.params, &self.state);
-            }
+            },
+            Pane::FdtdEditorCfg => {
+                ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
+                    self.needs_rebuild |=
+                        self.editor.show_fdtd_cfg(ui, &mut self.params, &self.state);
+                });
+            },
+            Pane::FdtdEditorEditComponent => {
+                ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
+                    self.needs_rebuild |=
+                        self.editor.show_fdtd_edit_wire(ui, &mut self.params, &self.state);
+                });
+            },
         }
 
         egui_tiles::UiResponse::None

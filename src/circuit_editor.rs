@@ -65,9 +65,6 @@ impl CircuitEditor {
             ui.label(RichText::new(error).color(Color32::RED));
         }
 
-        ui.separator();
-        ui.strong("Advanced");
-
         ui.add(DragValue::new(&mut cfg.max_nr_iters).prefix("Max NR iters: "));
         ui.horizontal(|ui| {
             ui.add(
@@ -100,8 +97,6 @@ impl CircuitEditor {
 
         ui.separator();
 
-        rebuild_sim |= self.editor.edit_component(ui, diagram, state);
-
         ui.separator();
         ui.strong("Visualization");
         ui.add(
@@ -126,6 +121,15 @@ impl CircuitEditor {
                 .max_by(|a, b| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(VisualizationOptions::default().current_scale);
         }
+        rebuild_sim
+    }
+
+    pub fn show_components(
+        &mut self,
+        ui: &mut Ui,
+        diagram: &mut Diagram,
+    ) -> bool {
+        let mut rebuild_sim = false;
 
         ui.label("Add component: ");
         let pos = egui_to_cellpos(self.view_rect.center());
@@ -191,6 +195,15 @@ impl CircuitEditor {
         */
 
         rebuild_sim
+    }
+
+    pub fn show_edit_component(
+        &mut self,
+        ui: &mut Ui,
+        diagram: &mut Diagram,
+        state: &DiagramState,
+    ) -> bool {
+        self.editor.edit_component(ui, diagram, state)
     }
 
     /// Returns true if the sim should be rebuilt
