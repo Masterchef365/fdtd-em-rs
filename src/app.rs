@@ -391,23 +391,18 @@ impl Default for SimulationParameters {
 
 impl SimulationControls {
     fn show_ui(&mut self, ui: &mut Ui) -> bool {
-        ui.strong("Time step");
+        ui.horizontal(|ui| {
+            play_pause_button(ui, &mut self.paused);
+            if single_step_button(ui).clicked() {
+                self.single_step = true;
+            }
+        });
+
         ui.horizontal(|ui| {
             ui.label("Time step: ");
             ui.add(egui::DragValue::new(&mut self.dt).speed(1e-7).suffix(" s"));
         });
 
-        /*
-        let text = if self.paused { "Play" } else { "Pause" };
-        if ui.button(text).clicked() {
-            self.paused = !self.paused;
-        }
-        */
-        play_pause_button(ui, &mut self.paused);
-
-        if ui.button("Single step").clicked() {
-            self.single_step = true;
-        }
 
         ui.button("Reset Simulation").clicked()
     }
@@ -493,7 +488,7 @@ fn readback_efield(
             .nth(*component_idx)
             .unwrap();
 
-        external_params[soln_vec_idx] = -voltage_drop;
+        external_params[soln_vec_idx] = voltage_drop;
     }
 
     external_params
@@ -652,4 +647,13 @@ fn play_pause_button(ui: &mut Ui, paused: &mut bool) {
     if ui.add(button).clicked() {
         *paused = !*paused;
     }
+}
+
+fn single_step_button(ui: &mut Ui) -> egui::Response {
+    let text = RichText::new("   ⏭   ").color(Color32::WHITE);
+
+    let button = egui::Button::new(text)
+        .min_size(egui::Vec2::new(0.0, 40.0));
+
+    ui.add(button)
 }
