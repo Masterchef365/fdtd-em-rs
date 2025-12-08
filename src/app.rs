@@ -5,7 +5,7 @@ use cirmcut::{
         PrimitiveDiagram, SimOutputs,
     },
 };
-use egui::{CentralPanel, Color32, RichText, ScrollArea, Ui};
+use egui::{CentralPanel, Color32, RichText, ScrollArea, TopBottomPanel, Ui};
 use ndarray::Array4;
 
 use crate::{
@@ -128,6 +128,26 @@ impl eframe::App for FdtdApp {
         ctx.request_repaint();
         //}
 
+        TopBottomPanel::top("menu").show(ctx, |ui| {
+            egui::containers::menu::MenuBar::new().ui(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Save").clicked() {
+                        save_file(&self.behavior.params);
+                    }
+                    if ui.button("Open").clicked() {
+                        if let Some(file) = open_file() {
+                            self.behavior.params = file;
+                            self.behavior.rebuild();
+                        }
+                    }
+                    if ui.button("New").clicked() {
+                        self.behavior.params = SimulationParameters::default();
+                        self.behavior.rebuild();
+                    }
+                });
+            });
+        });
+
         CentralPanel::default().show(ctx, |ui| {
             self.tree.ui(&mut self.behavior, ui);
         });
@@ -142,18 +162,22 @@ impl eframe::App for FdtdApp {
 }
 
 impl TreeBehavior {
+    fn rebuild(&mut self) {
+        self.state = SimulationState::new(&self.params);
+        self.needs_rebuild = false;
+    }
+
     fn step(&mut self) -> Result<(), String> {
         let do_rebuild = self.needs_rebuild;
         if do_rebuild {
-            self.state = SimulationState::new(&self.params);
-            self.needs_rebuild = false;
+            self.rebuild();
         }
 
         // Unconditionally rebuild the primitive diagram from the diagram;
         // this allows operating the switches at runtime.
         self.state.rewire(&self.params);
 
-        if self.controls.do_step() || do_rebuild {
+        if self.controls.do_step() {
             // Create E field from wires
             let width = self.state.fdtd.width();
             let elec = generate_efield(
@@ -464,10 +488,8 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
             Pane::CommonCfg => {
                 ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
                     self.needs_rebuild |= self.controls.show_ui(ui);
-                    if ui.button("Reset everything").clicked() {
-                        self.params = SimulationParameters::default();
-                        self.needs_rebuild = true;
-                    }
+                    ui.separator();
+                    
                     if let Some(error) = &self.error_shown {
                         ui.label(RichText::new(error).color(Color32::RED));
                     }
@@ -500,4 +522,32 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
 
         egui_tiles::UiResponse::None
     }
+}
+
+fn save_file(params: &SimulationParameters) {
+    let text = 
+    ron::Options::default().to_string_pretty(params, Default::default()).unwrap();
+
+    futures::executor::block_on(async move {
+        let Some(file) = rfd::AsyncFileDialog::new()
+            .add_filter("emf", &["emf"])
+            .set_file_name("new.emf")
+            .save_file().await else { return; };
+
+        if let Err(e) = file.write(text.as_bytes()).await {
+            log::error!("Error writing file: {e}");
+        }
+    })
+}
+
+fn open_file() -> Option<SimulationParameters> {
+    futures::executor::block_on(async move {
+        let file = rfd::AsyncFileDialog::new()
+            .add_filter("emf", &["emf"])
+            .pick_file().await?;
+
+        let bytes = file.read().await;
+        let params: SimulationParameters = ron::de::from_bytes(&bytes).unwrap();
+        Some(params)
+    })
 }
