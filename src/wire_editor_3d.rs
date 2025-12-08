@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use cirmcut::cirmcut_sim::SimOutputs;
+use cirmcut::{circuit_widget::VisualizationOptions, cirmcut_sim::SimOutputs};
 use egui::{Color32, DragValue, Pos2, Stroke, Ui, Vec2};
 use threegui::{Painter3D, ThreeUi};
 
@@ -199,11 +199,16 @@ impl WireEditor3D {
         nodemap: &NodeMap,
         soln: &SimOutputs,
         width: usize,
+        vis: &VisualizationOptions,
     ) {
         let time = thr.painter().egui().ctx().input(|r| r.time);
         for wire_id in wiring.wires.keys() {
             let component_idx = nodemap.component_idx_map[wire_id];
             let current = soln.two_terminal_current[component_idx];
+
+            if current == 0.0 {
+                continue;
+            }
 
             let (a, b) = *wire_id;
             let a_pos = espacet(width, a);
@@ -211,7 +216,7 @@ impl WireEditor3D {
 
             let n = 5;
             for i in 0..n {
-                let pos = (time * current.abs()).fract();
+                let pos = (time * current.abs() / vis.current_scale).fract();
                 let mut t = (i as f32 + pos as f32) / n as f32;
                 if current < 0.0 {
                     t = 1.0 - t;

@@ -1,4 +1,4 @@
-use cirmcut::cirmcut_sim::SimOutputs;
+use cirmcut::{circuit_widget::VisualizationOptions, cirmcut_sim::SimOutputs};
 use egui::{DragValue, Ui};
 
 use crate::{
@@ -92,6 +92,7 @@ impl FdtdEditor {
         wires: &mut Wiring3D,
         nodemap: &NodeMap,
         soln: &SimOutputs,
+        vis: &VisualizationOptions,
     ) -> bool {
         let mut rebuild_sim = false;
 
@@ -114,7 +115,7 @@ impl FdtdEditor {
                     self.grid_vis.draw(&sim, paint);
 
                     self.wire_editor_3d
-                        .draw_current(thr, wires, nodemap, soln, sim.width());
+                        .draw_current(thr, wires, nodemap, soln, sim.width(), vis);
                     rebuild_sim |= self.wire_editor_3d.edit(sim.width(), thr, wires);
                 });
         });

@@ -1,5 +1,5 @@
 use cirmcut::{
-    circuit_widget::{Diagram, DiagramState},
+    circuit_widget::{Diagram, DiagramState, VisualizationOptions},
     cirmcut_sim::{
         solver::{Solver, SolverConfig},
         PrimitiveDiagram, SimOutputs,
@@ -354,6 +354,7 @@ impl SimulationEditor {
             &mut params.fdtd_wiring,
             &state.nodemap,
             &state.outputs,
+            &self.circuit.vis_opt,
         )
     }
 }
@@ -488,7 +489,7 @@ fn readback_efield(
             .nth(*component_idx)
             .unwrap();
 
-        external_params[soln_vec_idx] = voltage_drop;
+        external_params[soln_vec_idx] = -voltage_drop;
     }
 
     external_params

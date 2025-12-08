@@ -16,7 +16,7 @@ pub struct CircuitEditor {
     editor: DiagramEditor,
     debug_draw: bool,
 
-    vis_opt: VisualizationOptions,
+    pub vis_opt: VisualizationOptions,
     error: Option<String>,
 }
 
