@@ -382,8 +382,8 @@ impl Wiring3D {
 impl Wire {
     pub fn show_ui(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label("Inductance: ");
-            ui.add(DragValue::new(&mut self.resistance).suffix("Henries"));
+            ui.label("Resistance: ");
+            ui.add(DragValue::new(&mut self.resistance).suffix(" Ohms"));
         });
     }
 }
