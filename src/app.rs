@@ -204,13 +204,14 @@ impl TreeBehavior {
             let magnetization = Array4::<f64>::zeros((width, width, width, 3));
 
             // Step FDTD
-            self.state
+            let current = self.state
                 .fdtd
                 .step(&self.params.fdtd_config, &magnetization, &elec);
 
             // Copy the fdtd e-field into the soln vector
             let external_params = readback_efield(
-                self.state.fdtd.e_field(),
+                //self.state.fdtd.e_field(),
+                &current,
                 &self.state.nodemap,
                 &self.params.fdtd_wiring,
                 &self.state.circuit_solver,
@@ -432,15 +433,14 @@ fn generate_efield(
     let width = fdtd.width();
     let mut external_field = Array4::<f64>::zeros((width, width, width, 3));
 
-    for (a, b) in wiring.wires.keys() {
+    for wire_id @ (a, b) in wiring.wires.keys() {
         let (x, y, z) = *a;
         let (bx, by, bz) = *b;
 
         assert!(bx > x || by > y || bz > z);
 
-        let a_idx = nodemap.pos_map[a];
-        let b_idx = nodemap.pos_map[b];
-        let dv = outs.voltages[b_idx] - outs.voltages[a_idx];
+        let idx = nodemap.component_idx_map[wire_id];
+        let current = outs.two_terminal_current[idx];
 
         let dim = if bx > x {
             0
@@ -451,7 +451,7 @@ fn generate_efield(
         };
 
         let coord = (x, y, z, dim);
-        external_field[coord] = dv;
+        external_field[coord] = current;
         fdtd.e_field[coord] = 0.0;
     }
 
@@ -467,13 +467,13 @@ fn readback_efield(
     let n = outs.map().vector_size();
     let mut external_params = vec![0_f64; n];
 
-    for wire_id @ (a, b) in wiring.wires.keys() {
+    for (wire_id @ (a, b), wire) in wiring.wires.iter() {
         let (x, y, z) = *a;
         let (bx, by, bz) = *b;
 
         assert!(bx > x || by > y || bz > z);
 
-        let voltage_drop = if bx > x {
+        let current = if bx > x {
             field[(x, y, z, 0)]
         } else if by > y {
             field[(x, y, z, 1)]
@@ -485,11 +485,11 @@ fn readback_efield(
         let soln_vec_idx = outs
             .map
             .state_map
-            .voltage_drops()
+            .currents()
             .nth(*component_idx)
             .unwrap();
 
-        external_params[soln_vec_idx] = -voltage_drop;
+        external_params[soln_vec_idx] = -current * wire.inductance;
     }
 
     external_params

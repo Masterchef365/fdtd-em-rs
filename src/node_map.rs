@@ -37,7 +37,7 @@ impl NodeMap {
         for (wire_id @ (a, b), wire) in &wiring.wires {
             let a_idx = nodemap_insert(&mut pos_map, *a, &mut rich.primitive);
             let b_idx = nodemap_insert(&mut pos_map, *b, &mut rich.primitive);
-            let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Resistor(wire.resistance);
+            let component = cirmcut::cirmcut_sim::TwoTerminalComponent::Inductor(wire.inductance, None);
             let component_idx = rich.primitive.two_terminal.len();
             rich.primitive
                 .two_terminal

@@ -12,10 +12,10 @@ use crate::{
 #[derive(serde::Serialize, serde::Deserialize, Clone, Copy)]
 pub struct Wire {
     /// Ohms
-    pub resistance: f64,
+    pub inductance: f64,
 }
 
-const DEFAULT_WIRE: Wire = Wire { resistance: 1.0 };
+const DEFAULT_WIRE: Wire = Wire { inductance: 1.0 };
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Port(pub String);
@@ -382,8 +382,8 @@ impl Wiring3D {
 impl Wire {
     pub fn show_ui(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.label("Resistance: ");
-            ui.add(DragValue::new(&mut self.resistance).suffix("Ohms"));
+            ui.label("Inductance: ");
+            ui.add(DragValue::new(&mut self.inductance).suffix("Henries"));
         });
     }
 }

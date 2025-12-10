@@ -33,8 +33,12 @@ impl FdtdSim {
         &mut self,
         cfg: &FdtdSimConfig,
         magnetization: &Array4<f64>,
-        external_elec: &Array4<f64>,
-    ) {
+        current: &Array4<f64>,
+    ) -> Array4<f64> {
+        let prev_e_field = self.e_field.clone();
+
+        self.e_field -= &(cfg.dt * cfg.mu * current);
+
         half_step(
             &mut self.e_field,
             &(&self.h_field + magnetization),
@@ -55,7 +59,7 @@ impl FdtdSim {
 
         half_step(
             &mut self.h_field,
-            &(&self.e_field + external_elec),
+            &(&self.e_field + current),
             -cfg.scaling(),
         );
 
@@ -70,6 +74,11 @@ impl FdtdSim {
                 self.h_field[(xi, yi, width - 1, 2)] = 0.0;
             }
         }
+
+        let induced_current = &self.e_field - &(prev_e_field - &(cfg.dt * curl(&self.h_field)));
+        let induced_current = induced_current / (cfg.dt * cfg.mu);
+
+        induced_current
     }
 }
 
