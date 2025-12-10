@@ -1,0 +1,77 @@
+(
+    fdtd_width: 10,
+    fdtd_config: (
+        dx: 1.0,
+        dt: 0.05,
+        mu: 100.0,
+        eps: 1.0,
+    ),
+    fdtd_wiring: (
+        wires: {
+            ((5, 2, 4), (5, 3, 4)): (
+                resistance: 1.0,
+            ),
+            ((5, 2, 8), (5, 3, 8)): (
+                resistance: 1.0,
+            ),
+            ((5, 5, 5), (5, 5, 6)): (
+                resistance: 1.0,
+            ),
+            ((5, 5, 7), (5, 5, 8)): (
+                resistance: 1.0,
+            ),
+            ((5, 3, 4), (5, 4, 4)): (
+                resistance: 1.0,
+            ),
+            ((5, 4, 8), (5, 5, 8)): (
+                resistance: 1.0,
+            ),
+            ((5, 4, 4), (5, 5, 4)): (
+                resistance: 1.0,
+            ),
+            ((5, 2, 4), (5, 2, 5)): (
+                resistance: 1.0,
+            ),
+            ((5, 2, 5), (5, 2, 6)): (
+                resistance: 1.0,
+            ),
+            ((5, 3, 8), (5, 4, 8)): (
+                resistance: 1.0,
+            ),
+            ((5, 5, 6), (5, 5, 7)): (
+                resistance: 1.0,
+            ),
+            ((5, 2, 6), (5, 2, 7)): (
+                resistance: 1.0,
+            ),
+            ((5, 2, 7), (5, 2, 8)): (
+                resistance: 1.0,
+            ),
+        },
+        ports: {
+            (5, 5, 5): ("B"),
+            (5, 5, 4): ("A"),
+        },
+    ),
+    circuit_diagram: (
+        ports: [
+            ((2, -1), "A"),
+            ((3, -1), "B"),
+        ],
+        two_terminal: [
+            (((2, 0), (3, 0)), Battery(5.0)),
+            (((2, 0), (2, -1)), Switch(false)),
+            (((3, -1), (3, 0)), Wire),
+            (((2, -1), (3, -1)), Resistor(1.0)),
+        ],
+        three_terminal: [],
+    ),
+    circuit_solver_cfg: (
+        max_nr_iters: 2000,
+        nr_step_size: 0.1,
+        nr_tolerance: 0.000001,
+        dx_soln_tolerance: 0.001,
+        mode: NewtonRaphson,
+        adaptive_step_size: true,
+    ),
+)

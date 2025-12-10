@@ -103,6 +103,11 @@ impl FdtdApp {
         let params: SimulationParameters = cc
             .storage
             .and_then(|storage| eframe::get_value(storage, eframe::APP_KEY))
+            .or_else(|| {
+                let text = include_bytes!("default.emf");
+                let params: SimulationParameters = ron::de::from_bytes(text).ok()?;
+                Some(params)
+            })
             .unwrap_or_default();
 
         let state = SimulationState::new(&params);
