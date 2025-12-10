@@ -240,6 +240,7 @@ impl WireEditor3D {
 
         ui.strong("Wires");
 
+        /*
         if ui.button("Add wire").clicked() {
             if let Some(Selection::Position(pos @ (x, y, z))) = self.sel_pos {
                 let b = if z + 1 < width {
@@ -254,7 +255,8 @@ impl WireEditor3D {
                 rebuild_sim = true;
             }
         }
-        ui.label("A quicker way is to select a point, then hold shift and select another.");
+        */
+        ui.label("To add a wire: select a point, then hold shift and select another point.");
         ui.separator();
 
         if let Some(Selection::WireId(wire_id)) = self.sel_pos {

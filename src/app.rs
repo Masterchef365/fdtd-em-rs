@@ -98,16 +98,18 @@ pub struct FdtdApp {
     behavior: TreeBehavior,
 }
 
+fn load_example_save() -> Option<SimulationParameters> {
+    let text = include_bytes!("default.emf");
+    let params: SimulationParameters = ron::de::from_bytes(text).ok()?;
+    Some(params)
+}
+
 impl FdtdApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let params: SimulationParameters = cc
             .storage
             .and_then(|storage| eframe::get_value(storage, eframe::APP_KEY))
-            .or_else(|| {
-                let text = include_bytes!("default.emf");
-                let params: SimulationParameters = ron::de::from_bytes(text).ok()?;
-                Some(params)
-            })
+            .or_else(load_example_save)
             .unwrap_or_default();
 
         let state = SimulationState::new(&params);
@@ -155,6 +157,12 @@ impl eframe::App for FdtdApp {
                     }
                     if ui.button("New").clicked() {
                         self.behavior.params = SimulationParameters::default();
+                        self.behavior.rebuild();
+                    }
+                    if ui.button("Load example").clicked() {
+                        if let Some(params) = load_example_save() {
+                            self.behavior.params = params;
+                        }
                         self.behavior.rebuild();
                     }
                 });
