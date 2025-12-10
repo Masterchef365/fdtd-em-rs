@@ -484,12 +484,12 @@ fn readback_efield(
         let component_idx = nodemap.component_idx_map.get(wire_id).unwrap();
         let soln_vec_idx = outs
             .map
-            .state_map
-            .currents()
+            .param_map
+            .components()
             .nth(*component_idx)
             .unwrap();
 
-        external_params[soln_vec_idx] = -current * wire.inductance;
+        external_params[soln_vec_idx] = -current * wire.resistance;
     }
 
     external_params
