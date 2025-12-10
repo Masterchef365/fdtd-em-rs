@@ -39,7 +39,6 @@ impl FdtdSim {
             &mut self.e_field,
             &(&self.h_field + magnetization),
             cfg.scaling(),
-            self.width,
         );
 
         let width = self.width();
@@ -58,7 +57,6 @@ impl FdtdSim {
             &mut self.h_field,
             &(&self.e_field + external_elec),
             -cfg.scaling(),
-            self.width,
         );
 
         let width = self.width();
@@ -100,7 +98,15 @@ const Z: usize = 2;
 /// Some Numerical Techniques for Maxwell's
 /// Equations in Different Types of Geometries
 /// (Bengt Fornberg)
-fn half_step(a: &mut Array4<f64>, b: &Array4<f64>, scale: f64, width: usize) {
+fn half_step(a: &mut Array4<f64>, b: &Array4<f64>, scale: f64) {
+    *a += &(curl(b) * scale);
+}
+
+fn curl(b: &Array4<f64>) -> Array4<f64> {
+    let mut output = Array4::<f64>::zeros(b.dim());
+
+    let (wx, wy, wz, _) = b.dim();
+
     let dx = |(xi, yi, zi): (usize, usize, usize), coord: usize| {
         b[(xi + 1, yi, zi, coord)] - b[(xi - 1, yi, zi, coord)]
     };
@@ -113,16 +119,18 @@ fn half_step(a: &mut Array4<f64>, b: &Array4<f64>, scale: f64, width: usize) {
         b[(xi, yi, zi + 1, coord)] - b[(xi, yi, zi - 1, coord)]
     };
 
-    for xi in 1..width - 1 {
-        for yi in 1..width - 1 {
-            for zi in 1..width - 1 {
+    for xi in 1..wx - 1 {
+        for yi in 1..wy - 1 {
+            for zi in 1..wz - 1 {
                 let coord = (xi, yi, zi);
-                a[(xi, yi, zi, X)] += scale * (dy(coord, Z) - dz(coord, Y));
-                a[(xi, yi, zi, Y)] += scale * (dz(coord, X) - dx(coord, Z));
-                a[(xi, yi, zi, Z)] += scale * (dx(coord, Y) - dy(coord, X));
+                output[(xi, yi, zi, X)] = dy(coord, Z) - dz(coord, Y);
+                output[(xi, yi, zi, Y)] = dz(coord, X) - dx(coord, Z);
+                output[(xi, yi, zi, Z)] = dx(coord, Y) - dy(coord, X);
             }
         }
     }
+
+    output
 }
 
 impl Default for FdtdSimConfig {
