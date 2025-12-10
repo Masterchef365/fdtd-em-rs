@@ -147,7 +147,7 @@ impl Default for FdtdSimConfig {
         Self {
             dx: 1.,
             dt: 0.005,
-            mu: 1.,
+            mu: 100.,
             eps: 1.,
         }
     }
