@@ -6,6 +6,7 @@ use cirmcut::{
     },
 };
 use egui::{CentralPanel, Color32, RichText, ScrollArea, TopBottomPanel, Ui};
+use egui_async::{Bind, EguiAsyncPlugin};
 use ndarray::Array4;
 
 use crate::{
@@ -53,11 +54,13 @@ struct TreeBehavior {
     /// Any error information from the simulation step is stored here.
     error_shown: Option<String>,
     needs_rebuild: bool,
+    file_dialog_bind: egui_async::Bind<SimulationParameters, ()>,
 }
 
 /// Every parameter needed for a simulation to proceed, including
 /// all wires, components, configuration options, etc.
 /// The output of the simulation is a pure function of this struct.
+#[derive(Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct SimulationParameters {
     fdtd_width: usize,
@@ -124,6 +127,7 @@ impl FdtdApp {
             editor,
             error_shown,
             needs_rebuild: false,
+            file_dialog_bind: Bind::new(true),
         };
 
         Self {
@@ -141,19 +145,26 @@ impl eframe::App for FdtdApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         //if self.controls.is_step_this_frame() {
         ctx.request_repaint();
-        //}
+        ctx.plugin_or_default::<EguiAsyncPlugin>(); // <-- REQUIRED
+        if let Some(Ok(file)) = self.behavior.file_dialog_bind.take() {
+            self.behavior.params = file;
+            self.behavior.rebuild();
+        }
 
         TopBottomPanel::top("menu").show(ctx, |ui| {
             egui::containers::menu::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Save").clicked() {
-                        save_file(&self.behavior.params);
+                        let params = self.behavior.params.clone();
+
+                        self.behavior
+                            .file_dialog_bind
+                            .request(async move { save_file(&params).await; Err(()) });
                     }
                     if ui.button("Open").clicked() {
-                        if let Some(file) = open_file() {
-                            self.behavior.params = file;
-                            self.behavior.rebuild();
-                        }
+                        self.behavior
+                            .file_dialog_bind
+                            .request(async { open_file().await.ok_or(()) });
                     }
                     if ui.button("New").clicked() {
                         self.behavior.params = SimulationParameters::default();
@@ -217,7 +228,8 @@ impl TreeBehavior {
             let magnetization = Array4::<f64>::zeros((width, width, width, 3));
 
             // Step FDTD
-            let current = self.state
+            let current = self
+                .state
                 .fdtd
                 .step(&self.params.fdtd_config, &magnetization, &elec);
 
@@ -300,11 +312,8 @@ impl SimulationEditor {
         params: &mut SimulationParameters,
         state: &SimulationState,
     ) -> bool {
-        self.circuit.show_edit_component(
-            ui,
-            &mut params.circuit_diagram,
-            &state.diagram_state,
-        )
+        self.circuit
+            .show_edit_component(ui, &mut params.circuit_diagram, &state.diagram_state)
     }
 
     pub fn show_circuit_components(
@@ -313,11 +322,10 @@ impl SimulationEditor {
         params: &mut SimulationParameters,
     ) -> bool {
         ui.horizontal(|ui| {
-            self.circuit.show_components(
-                ui,
-                &mut params.circuit_diagram,
-            )
-        }).inner
+            self.circuit
+                .show_components(ui, &mut params.circuit_diagram)
+        })
+        .inner
     }
 
     pub fn show_fdtd_cfg(
@@ -326,10 +334,7 @@ impl SimulationEditor {
         params: &mut SimulationParameters,
         state: &SimulationState,
     ) -> bool {
-        self.fdtd.show_cfg(
-            ui,
-            &mut params.fdtd_config,
-        )
+        self.fdtd.show_cfg(ui, &mut params.fdtd_config)
     }
 
     pub fn show_fdtd_edit_wire(
@@ -338,13 +343,9 @@ impl SimulationEditor {
         params: &mut SimulationParameters,
         state: &SimulationState,
     ) -> bool {
-        self.fdtd.show_edit_wire(
-            ui,
-            &state.fdtd,
-            &mut params.fdtd_wiring,
-        )
+        self.fdtd
+            .show_edit_wire(ui, &state.fdtd, &mut params.fdtd_wiring)
     }
-
 
     pub fn show_circuit_editor(
         &mut self,
@@ -417,7 +418,6 @@ impl SimulationControls {
             ui.label("Time step: ");
             ui.add(egui::DragValue::new(&mut self.dt).speed(1e-7).suffix(" s"));
         });
-
 
         ui.button("Reset Simulation").clicked()
     }
@@ -495,12 +495,7 @@ fn readback_efield(
         };
 
         let component_idx = nodemap.component_idx_map.get(wire_id).unwrap();
-        let soln_vec_idx = outs
-            .map
-            .param_map
-            .components()
-            .nth(*component_idx)
-            .unwrap();
+        let soln_vec_idx = outs.map.param_map.components().nth(*component_idx).unwrap();
 
         external_params[soln_vec_idx] = -current * wire.resistance;
     }
@@ -512,22 +507,24 @@ fn create_tree() -> egui_tiles::Tree<Pane> {
     let mut tiles = egui_tiles::Tiles::default();
 
     //let [common, fdtd, circuit, fdtd_cfg, cricuit_cfg] = [Pane::CommonCfg, Pane::FdtdEditor, Pane::CircuitEditor, Pane::FdtdEditorCfg, Pane::CircuitEditorCfg].map(|pane| tiles.insert_tab_tile(vec![tiles.insert_pane(pane)]));
-    let [common, circuit, circuit_cfg, circuit_components, circuit_edit_component, fdtd, fdtd_cfg, fdtd_component] = [
-        Pane::CommonCfg,
-        Pane::CircuitEditor,
-        Pane::CircuitEditorCfg,
-        Pane::CircuitEditorComponents,
-        Pane::CircuitEditorEditComponent,
-        Pane::FdtdEditor,
-        Pane::FdtdEditorCfg,
-        Pane::FdtdEditorEditComponent,
-    ]
-    .map(|pane| tiles.insert_pane(pane));
+    let [common, circuit, circuit_cfg, circuit_components, circuit_edit_component, fdtd, fdtd_cfg, fdtd_component] =
+        [
+            Pane::CommonCfg,
+            Pane::CircuitEditor,
+            Pane::CircuitEditorCfg,
+            Pane::CircuitEditorComponents,
+            Pane::CircuitEditorEditComponent,
+            Pane::FdtdEditor,
+            Pane::FdtdEditorCfg,
+            Pane::FdtdEditorEditComponent,
+        ]
+        .map(|pane| tiles.insert_pane(pane));
 
     let left_bar = tiles.insert_vertical_tile(vec![common, fdtd_cfg]);
     let fdtdstuff = tiles.insert_horizontal_tile(vec![left_bar, fdtd, fdtd_component]);
 
-    let circuithoriz = tiles.insert_horizontal_tile(vec![circuit_cfg, circuit, circuit_edit_component]);
+    let circuithoriz =
+        tiles.insert_horizontal_tile(vec![circuit_cfg, circuit, circuit_edit_component]);
     let circuitstuff = tiles.insert_vertical_tile(vec![circuithoriz, circuit_components]);
 
     let root = tiles.insert_vertical_tile(vec![fdtdstuff, circuitstuff]);
@@ -558,7 +555,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                 ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
                     self.needs_rebuild |= self.controls.show_ui(ui);
                     ui.separator();
-                    
+
                     if let Some(error) = &self.error_shown {
                         ui.label(RichText::new(error).color(Color32::RED));
                     }
@@ -572,11 +569,12 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                 });
             }
             Pane::CircuitEditorComponents => {
-                ScrollArea::horizontal().id_salt(pane.name()).show(ui, |ui| {
-                    self.needs_rebuild |=
-                        self.editor
-                            .show_circuit_components(ui, &mut self.params);
-                });
+                ScrollArea::horizontal()
+                    .id_salt(pane.name())
+                    .show(ui, |ui| {
+                        self.needs_rebuild |=
+                            self.editor.show_circuit_components(ui, &mut self.params);
+                    });
             }
             Pane::CircuitEditorEditComponent => {
                 ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
@@ -594,51 +592,54 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                 self.needs_rebuild |=
                     self.editor
                         .show_fdtd_editor(ui, &mut self.params, &self.state);
-            },
+            }
             Pane::FdtdEditorCfg => {
                 ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
                     self.needs_rebuild |=
                         self.editor.show_fdtd_cfg(ui, &mut self.params, &self.state);
                 });
-            },
+            }
             Pane::FdtdEditorEditComponent => {
                 ScrollArea::vertical().id_salt(pane.name()).show(ui, |ui| {
                     self.needs_rebuild |=
-                        self.editor.show_fdtd_edit_wire(ui, &mut self.params, &self.state);
+                        self.editor
+                            .show_fdtd_edit_wire(ui, &mut self.params, &self.state);
                 });
-            },
+            }
         }
 
         egui_tiles::UiResponse::None
     }
 }
 
-fn save_file(params: &SimulationParameters) {
-    let text = 
-    ron::Options::default().to_string_pretty(params, Default::default()).unwrap();
+async fn save_file(params: &SimulationParameters) {
+    let text = ron::Options::default()
+        .to_string_pretty(params, Default::default())
+        .unwrap();
 
-    futures::executor::block_on(async move {
-        let Some(file) = rfd::AsyncFileDialog::new()
-            .add_filter("emf", &["emf"])
-            .set_file_name("new.emf")
-            .save_file().await else { return; };
+    let Some(file) = rfd::AsyncFileDialog::new()
+        .add_filter("emf", &["emf"])
+        .set_file_name("new.emf")
+        .save_file()
+        .await
+        else {
+            return;
+        };
 
         if let Err(e) = file.write(text.as_bytes()).await {
             log::error!("Error writing file: {e}");
         }
-    })
 }
 
-fn open_file() -> Option<SimulationParameters> {
-    futures::executor::block_on(async move {
-        let file = rfd::AsyncFileDialog::new()
-            .add_filter("emf", &["emf"])
-            .pick_file().await?;
+async fn open_file() -> Option<SimulationParameters> {
+    let file = rfd::AsyncFileDialog::new()
+        .add_filter("emf", &["emf"])
+        .pick_file()
+        .await?;
 
-        let bytes = file.read().await;
-        let params: SimulationParameters = ron::de::from_bytes(&bytes).unwrap();
-        Some(params)
-    })
+    let bytes = file.read().await;
+    let params: SimulationParameters = ron::de::from_bytes(&bytes).unwrap();
+    Some(params)
 }
 
 fn play_pause_button(ui: &mut Ui, paused: &mut bool) {
@@ -666,8 +667,7 @@ fn play_pause_button(ui: &mut Ui, paused: &mut bool) {
 fn single_step_button(ui: &mut Ui) -> egui::Response {
     let text = RichText::new("   ⏭   ").color(Color32::WHITE);
 
-    let button = egui::Button::new(text)
-        .min_size(egui::Vec2::new(0.0, 40.0));
+    let button = egui::Button::new(text).min_size(egui::Vec2::new(0.0, 40.0));
 
     ui.add(button)
 }

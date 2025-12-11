@@ -33,8 +33,8 @@ cirmcut = { git = "https://github.com/Masterchef365/cirmcut.git", branch = "port
 egui_tiles = "0.14.0"
 
 ron = "0.12.0"
-futures = { version = "*", features = ["executor"] }
 rfd = { version = "0.16.0", features = ["xdg-portal", "wayland"] }
+egui-async = "0.2.5"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
